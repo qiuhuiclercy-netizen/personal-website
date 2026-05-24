@@ -1,0 +1,10 @@
+# 只保留个人网站相关文件
+*.pptx
+*.bat
+*.py
+*.js
+AI面试官.html
+打字练习大师.html
+crawl-output/
+__pycache__/
+node_modules/

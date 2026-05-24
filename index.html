@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alex Chen — 创作者 & 开发者</title>
+  <meta name="description" content="你好，我是 Alex Chen，一名热爱设计与代码的全栈开发者。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Nunito:wght@400;500;600;700&family=Caveat:wght@400;600&display=swap" rel="stylesheet" />
+
+  <!-- Dify Chatbot -->
+  <script>
+    window.difyChatbotConfig = {
+      token: 'OJZ0rtGYuWfgIONT',
+      inputs: {},
+      systemVariables: {},
+      userVariables: {},
+    }
+  </script>
+  <script src="https://udify.app/embed.min.js" id="OJZ0rtGYuWfgIONT" defer></script>
+
+  <style>
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+      --bg: #FFF8F0;
+      --surface: #FFFFFF;
+      --surface-alt: #FFF0E8;
+      --surface-hover: #FFF5EE;
+      --border: #FFE0CC;
+      --border-hover: #FFB89A;
+      --text: #2D2D2D;
+      --text-secondary: #666666;
+      --text-tertiary: #999999;
+      --accent: #FF3366;
+      --accent-hover: #E6194F;
+      --accent-2: #FFD700;
+      --accent-3: #00CC88;
+      --accent-4: #7C3AED;
+      --bg-rgb: 255, 248, 240;
+      --accent-rgb: 255, 51, 102;
+      --accent-2-rgb: 255, 215, 0;
+      --accent-3-rgb: 0, 204, 136;
+    }
+
+    /* ===== RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    [id] { scroll-margin-top: 80px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Nunito', 'Noto Sans SC', sans-serif;
+      font-size: 1rem;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    img { display: block; max-width: 100%; }
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-hover); }
+    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+    /* ===== SCROLL PROGRESS ===== */
+    .scroll-progress {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      z-index: 1001; transform-origin: left; transform: scaleX(0);
+      transition: transform 0.1s linear;
+    }
+
+    /* ===== LAYOUT ===== */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 88px 0; }
+
+    /* ===== NAVIGATION ===== */
+    .nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      padding: 18px 0;
+      background: transparent;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav.scrolled {
+      padding: 12px 0;
+      background: rgba(var(--bg-rgb), 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 16px rgba(var(--accent-rgb), 0.06);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.1rem;
+      color: var(--text); text-decoration: none; letter-spacing: -0.02em;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex; align-items: center; gap: 32px; list-style: none;
+    }
+    .nav-link {
+      font-family: 'Sora', sans-serif; font-size: 0.875rem; font-weight: 600;
+      color: var(--text-secondary); text-decoration: none;
+      transition: color 0.2s; position: relative;
+    }
+    .nav-link::after {
+      content: ''; position: absolute; bottom: -3px; left: 0;
+      width: 0; height: 2px; background: var(--accent); border-radius: 1px;
+      transition: width 0.3s ease;
+    }
+    .nav-link:hover { color: var(--text); }
+    .nav-link:hover::after { width: 100%; }
+    .nav-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 20px; border-radius: 50px;
+      background: var(--accent); color: #fff;
+      font-family: 'Sora', sans-serif; font-size: 0.85rem; font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 3px 10px rgba(var(--accent-rgb), 0.3);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+    }
+    .nav-cta:hover {
+      color: #fff;
+      transform: translateY(-1px) scale(1.03);
+      box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.4);
+    }
+    /* Hamburger */
+    .nav-burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; background: none; border: none; }
+    .nav-burger span { display: block; width: 22px; height: 2px; background: var(--text); border-radius: 2px; transition: all 0.3s; }
+    .nav-burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-burger.open span:nth-child(2) { opacity: 0; }
+    .nav-burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    /* Mobile menu */
+    .mobile-menu {
+      display: none; position: fixed; inset: 0; z-index: 99;
+      background: rgba(var(--bg-rgb), 0.97); backdrop-filter: blur(14px);
+      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      font-family: 'Sora', sans-serif; font-size: 1.6rem; font-weight: 700;
+      color: var(--text); text-decoration: none;
+    }
+    .mobile-menu a:hover { color: var(--accent); }
+
+    /* ===== BLOBS ===== */
+    .blob {
+      position: absolute; border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+      filter: blur(60px); opacity: 0.12; pointer-events: none;
+      animation: blobMorph 10s ease-in-out infinite; z-index: 0;
+    }
+    @keyframes blobMorph {
+      0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+      50% { border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%; }
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      min-height: 100vh; display: flex; align-items: center;
+      position: relative; overflow: hidden; padding-top: 80px;
+    }
+    .hero-blob-1 {
+      width: 500px; height: 500px;
+      background: var(--accent);
+      top: -100px; right: -80px;
+      animation-delay: 0s;
+    }
+    .hero-blob-2 {
+      width: 360px; height: 360px;
+      background: var(--accent-2);
+      bottom: 40px; left: -60px;
+      animation-delay: 3s;
+    }
+    .hero-blob-3 {
+      width: 280px; height: 280px;
+      background: var(--accent-3);
+      top: 30%; right: 25%;
+      animation-delay: 6s;
+    }
+    .hero-inner {
+      display: flex; align-items: center; gap: 64px;
+      position: relative; z-index: 1;
+      width: 100%;
+    }
+    .hero-content { flex: 1; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'Caveat', cursive; font-size: 1.15rem; font-weight: 600;
+      color: var(--accent); margin-bottom: 16px;
+    }
+    .hero-eyebrow::before {
+      content: '✦'; font-size: 0.8rem;
+    }
+    .hero-title {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      font-weight: 800; line-height: 1.1; letter-spacing: -0.02em;
+      margin-bottom: 8px; color: var(--text);
+    }
+    .hero-title-gradient {
+      background: linear-gradient(-45deg, #FF3366, #FF6B35, #FFD700, #FF3366);
+      background-size: 300% 300%;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 6s ease infinite;
+    }
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .hero-subtitle {
+      font-family: 'Sora', sans-serif; font-size: 1.1rem; font-weight: 600;
+      color: var(--text-secondary); margin-bottom: 20px;
+    }
+    .hero-desc {
+      font-size: 1.05rem; color: var(--text-secondary);
+      max-width: 480px; line-height: 1.75; margin-bottom: 36px;
+    }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 28px; border-radius: 50px;
+      font-family: 'Sora', sans-serif; font-size: 0.95rem; font-weight: 700;
+      text-decoration: none; cursor: pointer; border: 2px solid transparent;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.2s ease, background 0.2s ease, color 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.3);
+    }
+    .btn-primary:hover {
+      color: #fff;
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.42);
+      background: var(--accent-hover);
+    }
+    .btn-primary:active { transform: scale(0.96); box-shadow: none; }
+    .btn-secondary {
+      background: transparent; color: var(--accent); border-color: var(--accent);
+    }
+    .btn-secondary:hover {
+      background: rgba(var(--accent-rgb), 0.07);
+      transform: translateY(-1px); color: var(--accent);
+    }
+    /* Hero avatar */
+    .hero-avatar {
+      flex-shrink: 0; position: relative;
+    }
+    .hero-avatar-ring {
+      width: 340px; height: 340px; border-radius: 40% 60% 55% 45% / 45% 55% 60% 40%;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
+      padding: 4px; animation: blobMorph 8s ease-in-out infinite;
+      box-shadow: 0 20px 60px rgba(var(--accent-rgb), 0.25);
+    }
+    .hero-avatar-inner {
+      width: 100%; height: 100%;
+      border-radius: inherit;
+      overflow: hidden; background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hero-avatar-img {
+      width: 100%; height: 100%; object-fit: cover;
+      border-radius: inherit;
+    }
+    .hero-avatar-placeholder {
+      font-size: 7rem; line-height: 1; user-select: none;
+    }
+    /* Floating badges */
+    .hero-badge {
+      position: absolute;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 50px; padding: 8px 16px;
+      font-family: 'Nunito', sans-serif; font-size: 0.8rem; font-weight: 700;
+      color: var(--text-secondary);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+      white-space: nowrap;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .badge-1 { top: 10%; right: -20px; animation-delay: 0s; }
+    .badge-2 { bottom: 18%; left: -24px; animation-delay: 1.5s; }
+    .badge-3 { top: 55%; right: -30px; animation-delay: 3s; }
+    .badge-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .badge-dot-green { background: var(--accent-3); }
+    .badge-dot-yellow { background: var(--accent-2); }
+    .badge-dot-pink { background: var(--accent); }
+    /* Scroll hint */
+    .scroll-hint {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      font-family: 'Caveat', cursive; font-size: 0.9rem; color: var(--text-tertiary);
+      animation: scrollBounce 2s ease-in-out infinite;
+    }
+    @keyframes scrollBounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(6px); }
+    }
+    .scroll-hint svg { opacity: 0.5; }
+
+    /* ===== SECTION HEADER ===== */
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Caveat', cursive; font-size: 1.05rem; font-weight: 600;
+      color: var(--accent); margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+      font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; color: var(--text);
+    }
+    .section-subtitle {
+      margin-top: 12px; font-size: 1.05rem; color: var(--text-secondary);
+    }
+
+    /* ===== ABOUT / SKILLS ===== */
+    .about { background: var(--surface-alt); }
+    .about-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center;
+    }
+    .about-text h2 {
+      font-family: 'Sora', sans-serif; font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+      font-weight: 700; line-height: 1.2; margin-bottom: 20px; color: var(--text);
+    }
+    .about-text p { color: var(--text-secondary); line-height: 1.75; margin-bottom: 16px; }
+    .about-handwriting {
+      font-family: 'Caveat', cursive; font-size: 1.3rem; font-weight: 600;
+      color: var(--accent-3); margin-top: 8px; display: block;
+    }
+    .skills-container { display: flex; flex-direction: column; gap: 20px; }
+    .skill-group-title {
+      font-family: 'Sora', sans-serif; font-size: 0.8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary);
+      margin-bottom: 10px;
+    }
+    .skills-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+    .skill-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 16px; border-radius: 50px;
+      font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700;
+      border: 1.5px solid var(--border); background: var(--surface);
+      cursor: default;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.2s, border-color 0.2s;
+    }
+    .skill-tag:hover {
+      transform: scale(1.06) translateY(-2px);
+      box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.15);
+      border-color: var(--border-hover);
+    }
+    .skill-tag-icon { font-size: 1rem; }
+    /* Stats */
+    .stats-row { display: flex; gap: 40px; margin-top: 36px; }
+    .stat-item { text-align: center; }
+    .stat-number {
+      font-family: 'Sora', sans-serif; font-size: 2.2rem; font-weight: 800;
+      color: var(--accent); line-height: 1; display: block;
+    }
+    .stat-label {
+      font-size: 0.82rem; color: var(--text-tertiary); font-weight: 600;
+      font-family: 'Nunito', sans-serif; margin-top: 4px;
+    }
+
+    /* ===== PROJECTS ===== */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-auto-rows: minmax(220px, auto);
+      gap: 16px;
+    }
+    .project-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 20px; padding: 28px;
+      position: relative; overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.3s, border-color 0.3s;
+      display: flex; flex-direction: column; justify-content: flex-end;
+    }
+    .project-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      transform: scaleX(0); transform-origin: left; transition: transform 0.35s ease;
+    }
+    .project-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 48px rgba(var(--accent-rgb), 0.13);
+      border-color: var(--border-hover);
+    }
+    .project-card:hover::before { transform: scaleX(1); }
+    .pc-pink::before { background: linear-gradient(90deg, var(--accent), #FF9966); }
+    .pc-yellow::before { background: linear-gradient(90deg, var(--accent-2), #FF9966); }
+    .pc-green::before { background: linear-gradient(90deg, var(--accent-3), #00AAFF); }
+    .pc-purple::before { background: linear-gradient(90deg, var(--accent-4), var(--accent)); }
+    .project-card-wide { grid-column: span 4; }
+    .project-card-narrow { grid-column: span 2; }
+    .project-emoji {
+      position: absolute; top: 24px; right: 24px;
+      font-size: 2.8rem; line-height: 1; opacity: 0.9;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .project-card:hover .project-emoji { transform: scale(1.15) rotate(6deg); }
+    .project-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .tag {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px; border-radius: 50px;
+      font-family: 'Nunito', sans-serif; font-size: 0.7rem;
+      font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
+    }
+    .tag-pink { background: rgba(var(--accent-rgb), 0.1); color: var(--accent); }
+    .tag-yellow { background: rgba(var(--accent-2-rgb), 0.2); color: #9A7400; }
+    .tag-green { background: rgba(var(--accent-3-rgb), 0.12); color: #00996A; }
+    .tag-purple { background: rgba(124,58,237,0.1); color: #7C3AED; }
+    .project-title {
+      font-family: 'Sora', sans-serif; font-size: 1.15rem; font-weight: 700;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .project-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+    .project-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 16px; font-size: 0.85rem; font-weight: 700;
+      color: var(--accent); font-family: 'Sora', sans-serif;
+      transition: gap 0.2s;
+    }
+    .project-link:hover { gap: 8px; }
+    /* Background decorations for cards */
+    .project-bg-deco {
+      position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      opacity: 0.05;
+    }
+    .project-card > :not(.project-bg-deco) { position: relative; z-index: 1; }
+
+    /* ===== EXPERIENCE TIMELINE ===== */
+    .experience { background: var(--surface-alt); }
+    .timeline { display: flex; flex-direction: column; gap: 0; max-width: 720px; margin: 0 auto; }
+    .timeline-item {
+      display: grid; grid-template-columns: 80px 1fr; gap: 24px; padding-bottom: 40px;
+      position: relative;
+    }
+    .timeline-item:not(:last-child)::after {
+      content: ''; position: absolute; left: 36px; top: 32px; bottom: 0;
+      width: 2px; background: var(--border); z-index: 0;
+    }
+    .timeline-left { text-align: right; padding-top: 4px; }
+    .timeline-year {
+      font-family: 'Sora', sans-serif; font-size: 0.78rem; font-weight: 700;
+      color: var(--text-tertiary); letter-spacing: 0.04em;
+    }
+    .timeline-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--accent); border: 3px solid var(--bg);
+      box-shadow: 0 0 0 2px var(--accent);
+      position: absolute; left: 31px; top: 6px; z-index: 1;
+    }
+    .timeline-content {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 20px 24px;
+      transition: box-shadow 0.3s, border-color 0.3s;
+    }
+    .timeline-content:hover {
+      box-shadow: 0 6px 24px rgba(var(--accent-rgb), 0.08);
+      border-color: var(--border-hover);
+    }
+    .timeline-role {
+      font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text);
+    }
+    .timeline-company {
+      font-size: 0.85rem; color: var(--accent); font-weight: 600; margin-top: 2px;
+    }
+    .timeline-desc {
+      font-size: 0.9rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.65;
+    }
+
+    /* ===== CONTACT ===== */
+    .contact-wrapper {
+      max-width: 680px; margin: 0 auto; text-align: center;
+    }
+    .contact-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 24px; padding: 48px 40px;
+      box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.07);
+    }
+    .contact-emoji { font-size: 3rem; margin-bottom: 16px; display: block; }
+    .contact-title {
+      font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 700;
+      color: var(--text); margin-bottom: 12px;
+    }
+    .contact-desc { color: var(--text-secondary); margin-bottom: 32px; line-height: 1.7; }
+    .contact-links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-top: 28px; }
+    .social-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 50px;
+      border: 1.5px solid var(--border); background: var(--surface);
+      font-family: 'Nunito', sans-serif; font-size: 0.88rem; font-weight: 700;
+      color: var(--text-secondary); text-decoration: none;
+      transition: border-color 0.2s, color 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+    }
+    .social-link:hover {
+      border-color: var(--accent); color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(var(--accent-rgb), 0.15);
+    }
+    .form-group { text-align: left; margin-bottom: 16px; }
+    .form-label {
+      display: block; font-family: 'Nunito', sans-serif; font-size: 0.82rem;
+      font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;
+    }
+    .form-input, .form-textarea {
+      width: 100%; padding: 12px 16px; border-radius: 12px;
+      border: 1.5px solid var(--border); background: var(--bg);
+      font-family: 'Nunito', sans-serif; font-size: 0.95rem; color: var(--text);
+      transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+    }
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+    }
+    .form-textarea { min-height: 120px; resize: vertical; }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--text); color: rgba(255,255,255,0.6);
+      padding: 32px 0; text-align: center;
+    }
+    footer .footer-inner {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    footer .footer-logo {
+      font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.1rem;
+      color: #fff; margin-bottom: 4px;
+    }
+    footer .footer-logo span { color: var(--accent); }
+    footer p { font-size: 0.82rem; }
+    footer a { color: rgba(255,255,255,0.5); }
+    footer a:hover { color: #fff; }
+    .footer-note {
+      font-size: 0.72rem; opacity: 0.4; margin-top: 8px;
+    }
+
+    /* ===== REVEAL ANIMATIONS ===== */
+    .reveal {
+      opacity: 0; transform: translateY(32px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+    .reveal-scale {
+      opacity: 0; transform: scale(0.88);
+      transition: opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .reveal-scale.in-view { opacity: 1; transform: scale(1); }
+    .stagger > * {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .stagger.in-view > * { opacity: 1; transform: translateY(0); }
+
+    /* ===== DIFY CHATBOT ===== */
+    #dify-chatbot-bubble-button {
+      background-color: var(--accent) !important;
+    }
+    #dify-chatbot-bubble-window {
+      width: 24rem !important;
+      height: 40rem !important;
+    }
+
+    /* ===== REDUCED MOTION ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .reveal, .reveal-scale, .stagger > * { opacity: 1; transform: none; }
+      .hero-title-gradient { animation: none; }
+      .blob { animation: none; }
+      .hero-badge { animation: none; }
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1024px) {
+      .project-card-wide { grid-column: span 6; }
+      .project-card-narrow { grid-column: span 3; }
+      .about-grid { gap: 40px; }
+    }
+    @media (max-width: 768px) {
+      section { padding: 64px 0; }
+      .nav-links { display: none; }
+      .nav-burger { display: flex; }
+      .hero-inner { flex-direction: column; text-align: center; padding-top: 16px; }
+      .hero-content { order: 2; }
+      .hero-avatar { order: 1; }
+      .hero-avatar-ring { width: 220px; height: 220px; }
+      .hero-desc { max-width: 100%; }
+      .hero-actions { justify-content: center; }
+      .badge-1, .badge-2, .badge-3 { display: none; }
+      .about-grid { grid-template-columns: 1fr; }
+      .projects-grid { grid-template-columns: 1fr; }
+      .project-card-wide, .project-card-narrow { grid-column: span 1; }
+      .stats-row { gap: 24px; }
+      .contact-card { padding: 32px 20px; }
+      .contact-links { gap: 10px; }
+    }
+    @media (max-width: 480px) {
+      .btn { padding: 11px 20px; font-size: 0.88rem; }
+      .section-title { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Scroll Progress Bar -->
+  <div class="scroll-progress" id="scrollBar"></div>
+
+  <!-- ===== NAVIGATION ===== -->
+  <nav class="nav" id="nav">
+    <div class="container nav-inner">
+      <a href="#" class="nav-logo">Alex<span>.</span></a>
+      <ul class="nav-links">
+        <li><a href="#about" class="nav-link">关于我</a></li>
+        <li><a href="#projects" class="nav-link">项目</a></li>
+        <li><a href="#experience" class="nav-link">经历</a></li>
+        <li><a href="#contact" class="nav-link">联系</a></li>
+      </ul>
+      <a href="#contact" class="nav-cta">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 4L3 11l7 3 3 7 7-17z"/></svg>
+        联系我
+      </a>
+      <button class="nav-burger" id="navBurger" aria-label="菜单">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#about" class="mobile-menu-link">关于我</a>
+    <a href="#projects" class="mobile-menu-link">项目</a>
+    <a href="#experience" class="mobile-menu-link">经历</a>
+    <a href="#contact" class="mobile-menu-link">联系</a>
+  </div>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="home">
+    <!-- Blobs -->
+    <div class="blob hero-blob-1"></div>
+    <div class="blob hero-blob-2"></div>
+    <div class="blob hero-blob-3"></div>
+
+    <div class="container">
+      <div class="hero-inner">
+        <!-- Content -->
+        <div class="hero-content">
+          <div class="hero-eyebrow">你好，世界！</div>
+          <h1 class="hero-title">
+            我是
+            <span class="hero-title-gradient">Alex Chen</span>
+          </h1>
+          <p class="hero-subtitle">全栈开发者 · 产品设计师 · 创意探索者</p>
+          <p class="hero-desc">
+            热爱用代码和设计讲故事。专注于构建让人眼前一亮的数字体验——
+            从 0 到 1 的产品、精致的交互设计，或者某个改变工作流程的小工具。
+          </p>
+          <div class="hero-actions">
+            <a href="#projects" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              看看我的作品
+            </a>
+            <a href="#contact" class="btn btn-secondary">
+              和我打个招呼 👋
+            </a>
+          </div>
+        </div>
+
+        <!-- Avatar -->
+        <div class="hero-avatar">
+          <div class="hero-avatar-ring">
+            <div class="hero-avatar-inner">
+              <div class="hero-avatar-placeholder">🧑‍💻</div>
+            </div>
+          </div>
+          <!-- Floating badges -->
+          <div class="hero-badge badge-1">
+            <span class="badge-dot badge-dot-green"></span>
+            开放合作机会
+          </div>
+          <div class="hero-badge badge-2">
+            <span class="badge-dot badge-dot-yellow"></span>
+            ⚡ 3 年经验
+          </div>
+          <div class="hero-badge badge-3">
+            <span class="badge-dot badge-dot-pink"></span>
+            🌏 远程友好
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="scroll-hint">
+      <span>向下滚动</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10l5 5 5-5"/></svg>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT / SKILLS ===== -->
+  <section class="about" id="about">
+    <div class="container">
+      <div class="about-grid">
+        <!-- Left: Text -->
+        <div class="about-text reveal">
+          <h2>关于我这个人</h2>
+          <p>
+            大家好，我是 Alex，一名热爱把想法变成现实的开发者和设计师。
+            我相信好的产品不只是能用——它应该让人用起来感到愉悦。
+          </p>
+          <p>
+            平时喜欢折腾各种新技术，也会在咖啡馆画一些产品草图。
+            我的目标是在技术和设计之间找到那个刚好的平衡点。
+          </p>
+          <span class="about-handwriting">"好的设计，用户是感受不到的。" ✨</span>
+
+          <div class="stats-row">
+            <div class="stat-item">
+              <span class="stat-number count-up" data-end="20">0</span>
+              <div class="stat-label">完成项目</div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number count-up" data-end="3">0</span>
+              <div class="stat-label">年经验</div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number count-up" data-end="5">0</span>
+              <div class="stat-label">满意客户</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Skills -->
+        <div class="skills-container reveal" style="transition-delay: 0.15s;">
+          <div class="skill-group">
+            <div class="skill-group-title">前端开发</div>
+            <div class="skills-tags stagger">
+              <span class="skill-tag"><span class="skill-tag-icon">⚛️</span>React</span>
+              <span class="skill-tag"><span class="skill-tag-icon">🟢</span>Vue</span>
+              <span class="skill-tag"><span class="skill-tag-icon">🔷</span>TypeScript</span>
+              <span class="skill-tag"><span class="skill-tag-icon">🎨</span>CSS / Tailwind</span>
+              <span class="skill-tag"><span class="skill-tag-icon">⚡</span>Vite</span>
+            </div>
+          </div>
+          <div class="skill-group">
+            <div class="skill-group-title">后端 & 数据</div>
+            <div class="skills-tags stagger">
+              <span class="skill-tag"><span class="skill-tag-icon">🟡</span>Node.js</span>
+              <span class="skill-tag"><span class="skill-tag-icon">🐍</span>Python</span>
+              <span class="skill-tag"><span class="skill-tag-icon">🗄️</span>PostgreSQL</span>
+              <span class="skill-tag"><span class="skill-tag-icon">🔥</span>Firebase</span>
+            </div>
+          </div>
+          <div class="skill-group">
+            <div class="skill-group-title">设计 & 工具</div>
+            <div class="skills-tags stagger">
+              <span class="skill-tag"><span class="skill-tag-icon">🎭</span>Figma</span>
+              <span class="skill-tag"><span class="skill-tag-icon">🤖</span>AI 工具</span>
+              <span class="skill-tag"><span class="skill-tag-icon">📦</span>Docker</span>
+              <span class="skill-tag"><span class="skill-tag-icon">🐙</span>Git</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROJECTS ===== -->
+  <section id="projects">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-eyebrow">✦ 我做过的事</div>
+        <h2 class="section-title">精选项目</h2>
+        <p class="section-subtitle">这里是让我最有成就感的一些作品</p>
+      </div>
+
+      <div class="projects-grid stagger">
+        <!-- Wide card -->
+        <div class="project-card project-card-wide pc-pink reveal">
+          <div class="project-emoji">🚀</div>
+          <div class="project-tags">
+            <span class="tag tag-pink">React</span>
+            <span class="tag tag-purple">AI</span>
+            <span class="tag tag-green">全栈</span>
+          </div>
+          <div class="project-title">AI 智能写作助手</div>
+          <div class="project-desc">基于 GPT-4 的写作工具，支持多种写作风格和实时协作。帮助超过 500 名用户提升写作效率。</div>
+          <a href="#" class="project-link">查看详情 →</a>
+        </div>
+
+        <!-- Narrow card -->
+        <div class="project-card project-card-narrow pc-yellow reveal">
+          <div class="project-emoji">📊</div>
+          <div class="project-tags">
+            <span class="tag tag-yellow">数据可视化</span>
+          </div>
+          <div class="project-title">数据看板平台</div>
+          <div class="project-desc">为中小企业打造的轻量级 BI 工具。</div>
+          <a href="#" class="project-link">了解更多 →</a>
+        </div>
+
+        <!-- Narrow card -->
+        <div class="project-card project-card-narrow pc-green reveal">
+          <div class="project-emoji">🌿</div>
+          <div class="project-tags">
+            <span class="tag tag-green">Vue</span>
+            <span class="tag tag-yellow">Node</span>
+          </div>
+          <div class="project-title">个人习惯追踪器</div>
+          <div class="project-desc">帮助你建立好习惯的 PWA 应用，支持离线使用。</div>
+          <a href="#" class="project-link">体验一下 →</a>
+        </div>
+
+        <!-- Wide card -->
+        <div class="project-card project-card-wide pc-purple reveal">
+          <div class="project-emoji">🎨</div>
+          <div class="project-tags">
+            <span class="tag tag-purple">设计系统</span>
+            <span class="tag tag-pink">组件库</span>
+          </div>
+          <div class="project-title">开源 UI 组件库</div>
+          <div class="project-desc">一套专注于无障碍和可定制化的 React 组件库，在 GitHub 获得 200+ Star。采用 TypeScript 编写，支持暗色模式。</div>
+          <a href="#" class="project-link">GitHub 仓库 →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== EXPERIENCE ===== -->
+  <section class="experience" id="experience">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-eyebrow">✦ 我走过的路</div>
+        <h2 class="section-title">工作经历</h2>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-item reveal">
+          <div class="timeline-left">
+            <div class="timeline-year">2024</div>
+          </div>
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-role">高级前端工程师</div>
+            <div class="timeline-company">某科技独角兽公司 · 全职</div>
+            <div class="timeline-desc">负责核心产品的前端架构设计，带领 5 人团队将页面性能提升 40%。推动组件库规范化，降低团队协作成本。</div>
+          </div>
+        </div>
+        <div class="timeline-item reveal">
+          <div class="timeline-left">
+            <div class="timeline-year">2022</div>
+          </div>
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-role">前端开发工程师</div>
+            <div class="timeline-company">互联网创业公司 · 全职</div>
+            <div class="timeline-desc">从 0 到 1 搭建公司 B 端管理平台。使用 Vue3 + TypeScript，主导了多个核心功能模块的开发。</div>
+          </div>
+        </div>
+        <div class="timeline-item reveal">
+          <div class="timeline-left">
+            <div class="timeline-year">2021</div>
+          </div>
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-role">自由开发者</div>
+            <div class="timeline-company">独立接单 · 兼职</div>
+            <div class="timeline-desc">为多家小型企业提供网站开发和设计服务。积累了与客户沟通、需求梳理和独立交付的经验。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CONTACT ===== -->
+  <section id="contact">
+    <div class="container">
+      <div class="contact-wrapper reveal">
+        <div class="contact-card">
+          <span class="contact-emoji">👋</span>
+          <h2 class="contact-title">一起做点有趣的事？</h2>
+          <p class="contact-desc">
+            无论是一个新想法、合作机会，还是只是想聊聊天——
+            我都很乐意听！通常会在 24 小时内回复。
+          </p>
+
+          <!-- Contact Form -->
+          <form id="contactForm" onsubmit="handleFormSubmit(event)">
+            <div class="grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label" for="name">你的名字</label>
+                <input type="text" id="name" class="form-input" placeholder="Alex" required />
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label" for="email">邮箱地址</label>
+                <input type="email" id="email" class="form-input" placeholder="hello@example.com" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="message">说点什么</label>
+              <textarea id="message" class="form-textarea" placeholder="我想聊聊关于..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
+              发送消息 ✉️
+            </button>
+          </form>
+
+          <div class="contact-links">
+            <a href="mailto:hello@example.com" class="social-link">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              Email
+            </a>
+            <a href="#" class="social-link">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+              GitHub
+            </a>
+            <a href="#" class="social-link">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+              LinkedIn
+            </a>
+            <a href="#" class="social-link">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+              Twitter
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-logo">Alex<span>.</span></div>
+        <p>用 ❤️ 和 ☕ 手工打造</p>
+        <p>© 2024 Alex Chen. 保留所有权利。</p>
+        <p class="footer-note">Motion effects inspired by <a href="https://github.com/DavidHDev/vue-bits" target="_blank" rel="noopener">vue-bits</a> by DavidHDev (MIT)</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // ===== SCROLL PROGRESS =====
+    const scrollBar = document.getElementById('scrollBar');
+    window.addEventListener('scroll', () => {
+      const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+      scrollBar.style.transform = `scaleX(${Math.min(pct, 1)})`;
+    }, { passive: true });
+
+    // ===== NAV SCROLL =====
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 60);
+    }, { passive: true });
+
+    // ===== HAMBURGER MENU =====
+    const burger = document.getElementById('navBurger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    burger.addEventListener('click', () => {
+      burger.classList.toggle('open');
+      mobileMenu.classList.toggle('open');
+      document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+    });
+    mobileMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        burger.classList.remove('open');
+        mobileMenu.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    });
+
+    // ===== SCROLL REVEAL =====
+    function initScrollReveal() {
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('in-view');
+          obs.unobserve(e.target);
+        });
+      }, { threshold: 0.1 });
+      document.querySelectorAll('.reveal, .reveal-scale').forEach(el => obs.observe(el));
+    }
+
+    // ===== STAGGER REVEAL =====
+    function initStaggerReveal() {
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          Array.from(e.target.children).forEach((child, i) => {
+            child.style.transitionDelay = `${Math.min(i * 0.08, 0.5)}s`;
+          });
+          e.target.classList.add('in-view');
+          obs.unobserve(e.target);
+        });
+      }, { threshold: 0.08 });
+      document.querySelectorAll('.stagger').forEach(el => obs.observe(el));
+    }
+
+    // ===== COUNT UP =====
+    function countUp(el, end, duration = 1800) {
+      const start = 0;
+      const startTime = performance.now();
+      function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.floor(eased * end);
+        if (progress < 1) requestAnimationFrame(update);
+        else el.textContent = end;
+      }
+      requestAnimationFrame(update);
+    }
+    function initCounters() {
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          const end = parseInt(e.target.dataset.end, 10);
+          countUp(e.target, end);
+          obs.unobserve(e.target);
+        });
+      }, { threshold: 0.5 });
+      document.querySelectorAll('.count-up').forEach(el => obs.observe(el));
+    }
+
+    // ===== FORM SUBMIT =====
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.textContent = '已发送！🎉';
+      btn.style.background = 'var(--accent-3)';
+      btn.style.boxShadow = '0 4px 14px rgba(var(--accent-3-rgb), 0.3)';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = '发送消息 ✉️';
+        btn.style.background = '';
+        btn.style.boxShadow = '';
+        btn.disabled = false;
+        e.target.reset();
+      }, 3000);
+    }
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', () => {
+      initScrollReveal();
+      initStaggerReveal();
+      initCounters();
+    });
+  </script>
+</body>
+</html>
