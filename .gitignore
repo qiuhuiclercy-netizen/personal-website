@@ -8,3 +8,4 @@ AI面试官.html
 crawl-output/
 __pycache__/
 node_modules/
+clickword/config.json
