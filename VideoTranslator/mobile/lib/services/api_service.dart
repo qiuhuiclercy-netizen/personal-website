@@ -108,6 +108,12 @@ class ApiService {
     return '$base/api/download/$jobId';
   }
 
+  /// 试听 URL（synchronous，使用默认 base URL）
+  static String voicePreviewUrl(String character) {
+    final encoded = Uri.encodeComponent(character);
+    return '$_defaultBaseUrl/api/voice/preview/$encoded';
+  }
+
   /// Poll job until done or error. Calls [onProgress] with status string.
   static Stream<Map<String, dynamic>> pollJob(String jobId) async* {
     while (true) {

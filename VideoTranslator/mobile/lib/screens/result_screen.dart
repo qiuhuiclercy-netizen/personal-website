@@ -1,9 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 import '../services/api_service.dart';
 
 class ResultScreen extends StatefulWidget {
@@ -18,13 +17,35 @@ class _ResultScreenState extends State<ResultScreen> {
   bool _downloading = false;
   double _dlProgress = 0;
   String? _savedPath;
+  VideoPlayerController? _videoController;
+  bool _videoReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    try {
+      final url = await ApiService.getDownloadUrl(widget.jobId);
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(url));
+      await _videoController!.initialize();
+      _videoController!.setLooping(false);
+      if (mounted) setState(() => _videoReady = true);
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
+  }
 
   Future<void> _download() async {
     setState(() { _downloading = true; _dlProgress = 0; });
     try {
       final downloadUrl = await ApiService.getDownloadUrl(widget.jobId);
-
-      // 优先保存到公开 Downloads 目录（手机文件管理器可直接找到）
       Directory saveDir;
       if (Platform.isAndroid) {
         saveDir = Directory('/storage/emulated/0/Download');
@@ -35,26 +56,20 @@ class _ResultScreenState extends State<ResultScreen> {
         saveDir = await getApplicationDocumentsDirectory();
       }
       final path = '${saveDir.path}/配音视频_${widget.jobId}.mp4';
-
       await Dio().download(
-        downloadUrl,
-        path,
+        downloadUrl, path,
         onReceiveProgress: (recv, total) {
           if (total > 0) setState(() => _dlProgress = recv / total);
         },
       );
-
       setState(() { _downloading = false; _savedPath = path; });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('已保存到下载文件夹：${path.split('/').last}'),
-            duration: const Duration(seconds: 5),
-          ),
+          SnackBar(content: Text('已保存：${path.split('/').last}'), duration: const Duration(seconds: 4)),
         );
       }
     } catch (e) {
-      setState(() { _downloading = false; });
+      setState(() => _downloading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('下载失败：$e'), backgroundColor: Colors.red),
@@ -66,45 +81,92 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('配音完成')),
-      body: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('🎉', style: TextStyle(fontSize: 72))
-              .animate().scale(duration: 600.ms, curve: Curves.elasticOut),
-            const SizedBox(height: 24),
-            const Text('配音完成！',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700))
-              .animate().fadeIn(delay: 200.ms),
-            const SizedBox(height: 12),
-            const Text('视频已成功翻译为中文配音',
-              style: TextStyle(color: Colors.grey, fontSize: 15))
-              .animate().fadeIn(delay: 300.ms),
-            const SizedBox(height: 48),
-            if (_downloading) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: _dlProgress,
-                  minHeight: 8,
-                  backgroundColor: Colors.white12,
-                  valueColor: const AlwaysStoppedAnimation(Color(0xFF7C6AFF)),
+      appBar: AppBar(
+        title: const Text('配音完成 🎉'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: Column(children: [
+          Expanded(child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(children: [
+              // 视频播放器
+              AspectRatio(
+                aspectRatio: _videoController?.value.aspectRatio ?? 16/9,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: _videoReady
+                    ? Stack(alignment: Alignment.center, children: [
+                        VideoPlayer(_videoController!),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _videoController!.value.isPlaying
+                                ? _videoController!.pause()
+                                : _videoController!.play();
+                            });
+                          },
+                          child: Container(
+                            color: Colors.transparent,
+                            child: AnimatedOpacity(
+                              opacity: _videoController!.value.isPlaying ? 0 : 1,
+                              duration: const Duration(milliseconds: 200),
+                              child: Container(
+                                width: 64, height: 64,
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.play_arrow, size: 40, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ])
+                    : Container(
+                        color: Colors.black,
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
                 ),
               ),
-              const SizedBox(height: 12),
-              Text('下载中 ${(_dlProgress * 100).toInt()}%',
-                style: const TextStyle(color: Colors.grey, fontSize: 13)),
-            ] else ...[
-              SizedBox(
-                width: double.infinity,
-                height: 52,
+              if (_videoReady) VideoProgressIndicator(
+                _videoController!,
+                allowScrubbing: true,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                colors: const VideoProgressColors(
+                  playedColor: Color(0xFF7C6AFF),
+                  bufferedColor: Color(0x447C6AFF),
+                  backgroundColor: Color(0x22FFFFFF),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text('✅ 配音完成', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              const Text('视频已成功翻译为中文配音', style: TextStyle(color: Colors.grey, fontSize: 14)),
+            ]),
+          )),
+          // 底部操作按钮
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(children: [
+              if (_downloading) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: _dlProgress,
+                    minHeight: 8,
+                    backgroundColor: Colors.white12,
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFF7C6AFF)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text('下载中 ${(_dlProgress * 100).toInt()}%', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ] else SizedBox(
+                width: double.infinity, height: 54,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF7C6AFF), Color(0xFFFF6AAD)],
-                    ),
+                    gradient: const LinearGradient(colors: [Color(0xFF7C6AFF), Color(0xFFFF6AAD)]),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: ElevatedButton(
@@ -115,13 +177,13 @@ class _ResultScreenState extends State<ResultScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: Text(
-                      _savedPath != null ? '✅ 已保存到下载文件夹' : '⬇️ 下载视频到手机',
+                      _savedPath != null ? '✅ 已保存到下载' : '⬇️  下载视频到手机',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                   ),
                 ),
-              ).animate().fadeIn(delay: 400.ms),
-              const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 10),
               OutlinedButton(
                 onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
                 style: OutlinedButton.styleFrom(
@@ -130,10 +192,10 @@ class _ResultScreenState extends State<ResultScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: const Text('再翻译一个', style: TextStyle(color: Colors.white70)),
-              ).animate().fadeIn(delay: 500.ms),
-            ],
-          ],
-        ),
+              ),
+            ]),
+          ),
+        ]),
       ),
     );
   }

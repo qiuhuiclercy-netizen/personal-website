@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../services/api_service.dart';
 import 'result_screen.dart';
 
@@ -165,7 +164,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ),
         ),
       ],
-    ).animate().fadeIn();
+    );
   }
 
   List<Widget> _buildSteps() {

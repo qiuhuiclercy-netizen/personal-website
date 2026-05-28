@@ -16,12 +16,11 @@ class VideoDubApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0D0F1A),
-        colorScheme: ColorScheme.dark(
-          primary: const Color(0xFF7C6AFF),
-          secondary: const Color(0xFFFF6AAD),
-          surface: const Color(0xFF161827),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF7C6AFF),
+          secondary: Color(0xFFFF6AAD),
+          surface: Color(0xFF161827),
         ),
-        fontFamily: 'Roboto',
         useMaterial3: true,
       ),
       home: const HomeScreen(),

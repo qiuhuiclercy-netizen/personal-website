@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../services/api_service.dart';
-import '../widgets/voice_card.dart';
-import 'progress_screen.dart';
-import 'settings_screen.dart';
+import 'voice_select_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,25 +14,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   final _urlController = TextEditingController();
   String? _filePath;
   String? _fileName;
-  String _selectedCharacter = '播音员';
-  String _ttsProvider = 'xunfei';  // 默认讯飞TTS（火山方舟TTS需另行配置）
-  Map<String, dynamic> _voices = {};
-  bool _loadingVoices = true;
 
-  static const _voiceEmojis = {
-    '猫娘': '🐱',
-    '派大星': '⭐',
-    '林黛玉': '🌸',
-    '播音员': '📻',
-    '男主播': '🎙️',
-    '活泼小姐姐': '✨',
-  };
+  static const _platforms = [
+    {'emoji': '🎬', 'name': '本地视频'},
+    {'emoji': '🎵', 'name': '抖音'},
+    {'emoji': '📺', 'name': 'B站'},
+    {'emoji': '▶️', 'name': 'YouTube'},
+    {'emoji': '🟣', 'name': '腾讯视频'},
+    {'emoji': '🎵', 'name': 'TikTok'},
+  ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadVoices();
   }
 
   @override
@@ -44,15 +35,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _tabController.dispose();
     _urlController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadVoices() async {
-    try {
-      final voices = await ApiService.getVoices();
-      setState(() { _voices = voices; _loadingVoices = false; });
-    } catch (e) {
-      setState(() { _loadingVoices = false; });
-    }
   }
 
   Future<void> _pickFile() async {
@@ -65,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  Future<void> _start() async {
+  void _next() {
     final isUrl = _tabController.index == 0;
     if (isUrl && _urlController.text.trim().isEmpty) {
       _snack('请输入视频链接');
@@ -75,14 +57,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _snack('请选择视频文件');
       return;
     }
-
-    if (!mounted) return;
-    Navigator.push(context, MaterialPageRoute(builder: (_) => ProgressScreen(
+    Navigator.push(context, MaterialPageRoute(builder: (_) => VoiceSelectScreen(
       isUrl: isUrl,
       url: isUrl ? _urlController.text.trim() : null,
       filePath: isUrl ? null : _filePath,
-      character: _selectedCharacter,
-      ttsProvider: _ttsProvider,
+      fileName: _fileName,
     )));
   }
 
@@ -92,49 +71,76 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(children: [
-          const Text('🎙️ ', style: TextStyle(fontSize: 22)),
-          RichText(text: TextSpan(
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-            children: [
-              const TextSpan(text: 'VideoDub '),
-              TextSpan(
-                text: 'AI',
-                style: TextStyle(
-                  foreground: Paint()
-                    ..shader = const LinearGradient(
-                      colors: [Color(0xFF7C6AFF), Color(0xFFFF6AAD)],
-                    ).createShader(const Rect.fromLTWH(0, 0, 60, 20)),
-                ),
-              ),
-            ],
-          )),
-        ]),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen())),
-          ),
-        ],
+        title: RichText(text: const TextSpan(
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          children: [
+            TextSpan(text: '🎙️ VideoDub '),
+            TextSpan(text: 'AI', style: TextStyle(color: Color(0xFF7C6AFF))),
+          ],
+        )),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInputCard(theme),
-            const SizedBox(height: 16),
-            _buildVoiceCard(theme),
-            const SizedBox(height: 16),
-            _buildTtsProviderCard(theme),
+            const Text('英语视频 → 中文配音', style: TextStyle(color: Colors.grey, fontSize: 13)),
             const SizedBox(height: 24),
-            _buildStartButton(),
+            _Card(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _stepTitle('1', '选择视频来源'),
+                const SizedBox(height: 16),
+                TabBar(
+                  controller: _tabController,
+                  tabs: const [Tab(text: '🔗 粘贴链接'), Tab(text: '📁 本地视频')],
+                  indicatorColor: const Color(0xFF7C6AFF),
+                  labelColor: const Color(0xFF7C6AFF),
+                  unselectedLabelColor: Colors.grey,
+                  dividerColor: Colors.transparent,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 110,
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _urlInput(),
+                      _filePicker(),
+                    ],
+                  ),
+                ),
+              ],
+            )),
+            const SizedBox(height: 16),
+            _Card(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('支持的平台', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                const SizedBox(height: 12),
+                Wrap(spacing: 8, runSpacing: 8, children: _platforms.map((p) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(p['emoji']!, style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 6),
+                      Text(p['name']!, style: const TextStyle(fontSize: 12)),
+                    ]),
+                  );
+                }).toList()),
+              ],
+            )),
+            const SizedBox(height: 32),
+            _nextButton(),
             const SizedBox(height: 32),
           ],
         ),
@@ -142,192 +148,121 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildInputCard(ThemeData theme) {
-    return _Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionTitle('1', '选择视频来源'),
-          const SizedBox(height: 16),
-          TabBar(
-            controller: _tabController,
-            tabs: const [Tab(text: '🔗 粘贴链接'), Tab(text: '📁 本地视频')],
-            indicatorColor: theme.colorScheme.primary,
-            labelColor: theme.colorScheme.primary,
-            unselectedLabelColor: Colors.grey,
-            dividerColor: Colors.transparent,
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 120,
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                // URL tab
-                Column(
-                  children: [
-                    Row(children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _urlController,
-                          style: const TextStyle(fontSize: 14),
-                          decoration: InputDecoration(
-                            hintText: '暂时仅支持上传本地视频文件...',
-                            hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.05),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _IconBtn(Icons.content_paste, () async {
-                        final data = await Clipboard.getData('text/plain');
-                        if (data?.text != null) _urlController.text = data!.text!;
-                      }),
-                    ]),
-                    const SizedBox(height: 8),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '✅ 支持抖音链接  ❌ B站/YouTube/腾讯视频需先下载到手机',
-                        style: TextStyle(color: Colors.orange, fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-                // File tab
-                _filePath == null
-                  ? GestureDetector(
-                      onTap: _pickFile,
-                      child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white24, style: BorderStyle.solid),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('🎬', style: TextStyle(fontSize: 28)),
-                            SizedBox(height: 8),
-                            Text('点击选择视频文件', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    )
-                  : Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.green.withOpacity(0.3)),
-                      ),
-                      child: Row(children: [
-                        const Text('🎞️', style: TextStyle(fontSize: 20)),
-                        const SizedBox(width: 10),
-                        Expanded(child: Text(_fileName ?? '', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
-                        GestureDetector(
-                          onTap: () => setState(() { _filePath = null; _fileName = null; }),
-                          child: const Icon(Icons.close, color: Colors.grey, size: 18),
-                        ),
-                      ]),
-                    ),
-              ],
+  Widget _urlInput() {
+    return Column(children: [
+      Row(children: [
+        Expanded(
+          child: TextField(
+            controller: _urlController,
+            style: const TextStyle(fontSize: 14),
+            decoration: InputDecoration(
+              hintText: '粘贴视频链接...',
+              hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
           ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
-  }
-
-  Widget _buildVoiceCard(ThemeData theme) {
-    return _Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionTitle('2', '选择配音角色'),
-          const SizedBox(height: 16),
-          _loadingVoices
-            ? const Center(child: CircularProgressIndicator())
-            : _voices.isEmpty
-              ? const Text('无法加载角色列表，请检查服务器连接', style: TextStyle(color: Colors.grey))
-              : GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    childAspectRatio: 0.9,
-                  ),
-                  itemCount: _voices.length,
-                  itemBuilder: (_, i) {
-                    final name = _voices.keys.elementAt(i);
-                    final info = _voices[name] as Map;
-                    return VoiceCard(
-                      name: name,
-                      emoji: _voiceEmojis[name] ?? '🎤',
-                      desc: info['desc'] ?? '',
-                      isSelected: name == _selectedCharacter,
-                      onTap: () => setState(() => _selectedCharacter = name),
-                    );
-                  },
-                ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.1, end: 0);
-  }
-
-  Widget _buildTtsProviderCard(ThemeData theme) {
-    return _Card(
-      child: Row(
-        children: [
-          const Text('⚡', style: TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('配音引擎：讯飞 TTS', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                Text('高质量中文语音合成', style: TextStyle(color: Colors.grey, fontSize: 12)),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () async {
+            final data = await Clipboard.getData('text/plain');
+            if (data?.text != null) _urlController.text = data!.text!;
+          },
+          child: Container(
+            width: 44, height: 44,
             decoration: BoxDecoration(
-              color: Color(0xFF7C6AFF).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
-            child: const Text('已就绪', style: TextStyle(color: Color(0xFF7C6AFF), fontSize: 12)),
+            child: const Icon(Icons.content_paste, size: 18, color: Colors.grey),
           ),
-        ],
+        ),
+      ]),
+      const SizedBox(height: 8),
+      const Text(
+        '提示：B站/YouTube 链接如下载失败，请改用本地上传',
+        style: TextStyle(color: Colors.orange, fontSize: 11),
       ),
-    ).animate().fadeIn(duration: 400.ms, delay: 200.ms);
+    ]);
   }
 
-  Widget _buildStartButton() {
+  Widget _filePicker() {
+    if (_filePath == null) {
+      return GestureDetector(
+        onTap: _pickFile,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white24),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('🎬', style: TextStyle(fontSize: 28)),
+              SizedBox(height: 8),
+              Text('点击选择视频文件', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: Row(children: [
+        const Text('🎞️', style: TextStyle(fontSize: 20)),
+        const SizedBox(width: 10),
+        Expanded(child: Text(_fileName ?? '', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+        GestureDetector(
+          onTap: () => setState(() { _filePath = null; _fileName = null; }),
+          child: const Icon(Icons.close, color: Colors.grey, size: 18),
+        ),
+      ]),
+    );
+  }
+
+  Widget _stepTitle(String step, String title) {
+    return Row(children: [
+      Container(
+        width: 24, height: 24,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: [Color(0xFF7C6AFF), Color(0xFFFF6AAD)]),
+          shape: BoxShape.circle,
+        ),
+        child: Center(child: Text(step, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700))),
+      ),
+      const SizedBox(width: 10),
+      Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+    ]);
+  }
+
+  Widget _nextButton() {
     return SizedBox(
       width: double.infinity,
       height: 54,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF7C6AFF), Color(0xFFFF6AAD)],
-          ),
+          gradient: const LinearGradient(colors: [Color(0xFF7C6AFF), Color(0xFFFF6AAD)]),
           borderRadius: BorderRadius.circular(14),
         ),
         child: ElevatedButton(
-          onPressed: _start,
+          onPressed: _next,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
@@ -336,18 +271,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('⚡', style: TextStyle(fontSize: 20)),
+              Text('下一步：选择配音声音', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
               SizedBox(width: 8),
-              Text('开始翻译配音', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
+              Icon(Icons.arrow_forward, color: Colors.white, size: 20),
             ],
           ),
         ),
       ),
-    ).animate().fadeIn(duration: 400.ms, delay: 300.ms).scale(begin: const Offset(0.95, 0.95));
+    );
   }
 }
-
-// ─── Helpers ──────────────────────────────────────────────────
 
 class _Card extends StatelessWidget {
   final Widget child;
@@ -362,66 +295,6 @@ class _Card extends StatelessWidget {
         border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: child,
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String step;
-  final String title;
-  const _SectionTitle(this.step, this.title);
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Container(
-        width: 24, height: 24,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: [Color(0xFF7C6AFF), Color(0xFFFF6AAD)]),
-          shape: BoxShape.circle,
-        ),
-        child: Center(child: Text(step, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700))),
-      ),
-      const SizedBox(width: 10),
-      Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-    ]);
-  }
-}
-
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _IconBtn(this.icon, this.onTap);
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44, height: 44,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-        ),
-        child: Icon(icon, size: 20, color: Colors.grey[300]),
-      ),
-    );
-  }
-}
-
-class _RadioOption extends StatelessWidget {
-  final String value;
-  final String label;
-  final String groupValue;
-  final ValueChanged<String?> onChanged;
-  const _RadioOption(this.value, this.label, this.groupValue, this.onChanged);
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onChanged(value),
-      child: Row(children: [
-        Radio<String>(value: value, groupValue: groupValue, onChanged: onChanged, activeColor: const Color(0xFF7C6AFF)),
-        Text(label, style: const TextStyle(fontSize: 13)),
-      ]),
     );
   }
 }
