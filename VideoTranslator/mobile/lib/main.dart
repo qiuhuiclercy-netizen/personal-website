@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -22,9 +21,7 @@ class VideoDubApp extends StatelessWidget {
           secondary: const Color(0xFFFF6AAD),
           surface: const Color(0xFF161827),
         ),
-        textTheme: GoogleFonts.notoSansSCTextTheme(
-          ThemeData.dark().textTheme,
-        ),
+        fontFamily: 'Roboto',
         useMaterial3: true,
       ),
       home: const HomeScreen(),

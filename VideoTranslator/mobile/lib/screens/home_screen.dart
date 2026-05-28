@@ -197,7 +197,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     const SizedBox(height: 8),
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('⚠️ 平台限制：请先保存视频到手机，再用「本地视频」上传', style: TextStyle(color: Colors.orange, fontSize: 12)),
+                      child: Text(
+                        '✅ 支持抖音链接  ❌ B站/YouTube/腾讯视频需先下载到手机',
+                        style: TextStyle(color: Colors.orange, fontSize: 12),
+                      ),
                     ),
                   ],
                 ),
@@ -286,16 +289,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildTtsProviderCard(ThemeData theme) {
     return _Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          const Text('TTS 引擎', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-          const SizedBox(height: 12),
-          Row(children: [
-            _RadioOption('xunfei', '⚡ 讯飞 TTS（推荐）', _ttsProvider, (v) => setState(() => _ttsProvider = v!)),
-            const SizedBox(width: 20),
-            _RadioOption('volcengine', '🌋 火山方舟', _ttsProvider, (v) => setState(() => _ttsProvider = v!)),
-          ]),
+          const Text('⚡', style: TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('配音引擎：讯飞 TTS', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                Text('高质量中文语音合成', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Color(0xFF7C6AFF).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text('已就绪', style: TextStyle(color: Color(0xFF7C6AFF), fontSize: 12)),
+          ),
         ],
       ),
     ).animate().fadeIn(duration: 400.ms, delay: 200.ms);
