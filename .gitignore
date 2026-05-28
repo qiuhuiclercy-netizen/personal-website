@@ -20,3 +20,5 @@ VideoTranslator/backend/output/
 VideoTranslator/backend/temp/
 VideoTranslator/mobile/.dart_tool/
 VideoTranslator/mobile/build/
+VideoTranslator/backend/*.mp3
+VideoTranslator/backend/*.wav
