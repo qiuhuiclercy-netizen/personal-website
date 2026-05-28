@@ -31,6 +31,10 @@ jobs:
       - name: 📋 Flutter version info
         run: flutter --version
 
+      - name: 🏗️ Regenerate Android project (fix v1 embedding)
+        working-directory: VideoTranslator/mobile
+        run: flutter create . --platforms=android --org com.videodub
+
       - name: 📦 Get dependencies
         working-directory: VideoTranslator/mobile
         run: flutter pub get
