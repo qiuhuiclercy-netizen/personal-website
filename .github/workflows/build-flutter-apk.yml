@@ -5,7 +5,7 @@ on:
     paths:
       - 'VideoTranslator/mobile/**'
       - '.github/workflows/build-flutter-apk.yml'
-  workflow_dispatch:   # 允许在 GitHub 网页上手动触发
+  workflow_dispatch:
 
 jobs:
   build-android:
@@ -30,18 +30,6 @@ jobs:
 
       - name: 📋 Flutter version info
         run: flutter --version
-
-      - name: 🏗️ Regenerate Android project (fix v1 embedding)
-        working-directory: VideoTranslator/mobile
-        run: flutter create . --platforms=android --org com.videodub
-
-      - name: 🔧 Patch compileSdk to 36 (required by flutter_plugin_android_lifecycle)
-        working-directory: VideoTranslator/mobile
-        run: |
-          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle
-          sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 36/' android/app/build.gradle
-          echo "--- android/app/build.gradle compileSdk line ---"
-          grep -i compileSdk android/app/build.gradle
 
       - name: 📦 Get dependencies
         working-directory: VideoTranslator/mobile
