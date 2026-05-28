@@ -44,11 +44,20 @@ jobs:
 
       - name: 🔨 Build release APK
         working-directory: VideoTranslator/mobile/android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
 
       - name: 📤 Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: VideoDub-release-apk
           path: VideoTranslator/mobile/android/app/build/outputs/apk/release/*.apk
           retention-days: 30
+
+      - name: 🪵 Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: /tmp/gradle-build.log
+          retention-days: 7
