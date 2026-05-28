@@ -59,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             const Text('服务器地址', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             const SizedBox(height: 8),
-            const Text('填入运行 VideoDub 后端的电脑 IP 地址', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            const Text('默认已连接云端服务器，无需修改。如需自建服务器可在此更改。', style: TextStyle(color: Colors.grey, fontSize: 13)),
             const SizedBox(height: 12),
             TextField(
               controller: _urlController,
@@ -122,10 +122,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   static const _tips = [
-    ['1️⃣', '在电脑上运行 VideoDub 后端服务（双击 start.bat）'],
-    ['2️⃣', '手机和电脑连接同一个 WiFi'],
-    ['3️⃣', '在设置页填入电脑的局域网 IP（如 192.168.1.100:8000）'],
-    ['4️⃣', '点击"测试连接"确认可以访问'],
-    ['5️⃣', '回到主页，粘贴视频链接或上传本地视频，选择角色开始翻译'],
+    ['☁️', '服务运行在云端，无需开电脑，随时可用'],
+    ['📁', '推荐：把视频保存到手机后，用「本地视频」上传处理'],
+    ['⚠️', 'B站、YouTube、推特等平台无法直接粘贴链接，请先下载到手机再上传'],
+    ['🎙️', '选择喜欢的配音角色（播音员、猫娘、林黛玉等）'],
+    ['⬇️', '处理完成后点击下载，获取中文配音视频'],
   ];
 }

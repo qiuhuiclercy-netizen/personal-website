@@ -23,8 +23,18 @@ class _ResultScreenState extends State<ResultScreen> {
     setState(() { _downloading = true; _dlProgress = 0; });
     try {
       final downloadUrl = await ApiService.getDownloadUrl(widget.jobId);
-      final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-      final path = '${dir.path}/dubbed_${widget.jobId}.mp4';
+
+      // 优先保存到公开 Downloads 目录（手机文件管理器可直接找到）
+      Directory saveDir;
+      if (Platform.isAndroid) {
+        saveDir = Directory('/storage/emulated/0/Download');
+        if (!saveDir.existsSync()) {
+          saveDir = (await getExternalStorageDirectory()) ?? await getApplicationDocumentsDirectory();
+        }
+      } else {
+        saveDir = await getApplicationDocumentsDirectory();
+      }
+      final path = '${saveDir.path}/配音视频_${widget.jobId}.mp4';
 
       await Dio().download(
         downloadUrl,
@@ -37,7 +47,10 @@ class _ResultScreenState extends State<ResultScreen> {
       setState(() { _downloading = false; _savedPath = path; });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已保存到：$path'), duration: const Duration(seconds: 4)),
+          SnackBar(
+            content: Text('已保存到下载文件夹：${path.split('/').last}'),
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     } catch (e) {
@@ -102,7 +115,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: Text(
-                      _savedPath != null ? '✅ 已保存到相册' : '⬇️ 下载视频到手机',
+                      _savedPath != null ? '✅ 已保存到下载文件夹' : '⬇️ 下载视频到手机',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                   ),

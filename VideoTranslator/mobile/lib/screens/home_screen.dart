@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String? _filePath;
   String? _fileName;
   String _selectedCharacter = '播音员';
-  String _ttsProvider = 'volcengine';
+  String _ttsProvider = 'xunfei';  // 默认讯飞TTS（火山方舟TTS需另行配置）
   Map<String, dynamic> _voices = {};
   bool _loadingVoices = true;
 
@@ -172,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           controller: _urlController,
                           style: const TextStyle(fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: '粘贴 YouTube 或抖音链接...',
+                            hintText: '暂时仅支持上传本地视频文件...',
                             hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.05),
@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     const SizedBox(height: 8),
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('支持 YouTube、抖音、Bilibili 等', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      child: Text('⚠️ 平台限制：请先保存视频到手机，再用「本地视频」上传', style: TextStyle(color: Colors.orange, fontSize: 12)),
                     ),
                   ],
                 ),
@@ -292,9 +292,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           const Text('TTS 引擎', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
           const SizedBox(height: 12),
           Row(children: [
-            _RadioOption('volcengine', '🌋 火山方舟', _ttsProvider, (v) => setState(() => _ttsProvider = v!)),
+            _RadioOption('xunfei', '⚡ 讯飞 TTS（推荐）', _ttsProvider, (v) => setState(() => _ttsProvider = v!)),
             const SizedBox(width: 20),
-            _RadioOption('xunfei', '⚡ 讯飞 TTS', _ttsProvider, (v) => setState(() => _ttsProvider = v!)),
+            _RadioOption('volcengine', '🌋 火山方舟', _ttsProvider, (v) => setState(() => _ttsProvider = v!)),
           ]),
         ],
       ),

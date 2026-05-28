@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../services/api_service.dart';
@@ -29,6 +30,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   bool _failed = false;
   String? _errorMsg;
   String? _jobId;
+  StreamSubscription<Map<String, dynamic>>? _pollSub;
 
   static const _steps = [
     {'id': 'download',  'label': '📥 下载/接收视频',   'keywords': ['下载', '接收', 'upload', '上传']},
@@ -44,6 +46,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
   void initState() {
     super.initState();
     _start();
+  }
+
+  @override
+  void dispose() {
+    _pollSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _start() async {
@@ -71,7 +79,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   void _poll(String jobId) {
-    ApiService.pollJob(jobId).listen(
+    _pollSub = ApiService.pollJob(jobId).listen(
       (job) {
         if (!mounted) return;
         final msg = (job['progress'] ?? '') as String;
