@@ -48,6 +48,14 @@
         }
       ],
       [
+        "expo-media-library",
+        {
+          "photosPermission": "允许 VideoDub AI 把配音视频保存到你的相册",
+          "savePhotosPermission": "允许 VideoDub AI 把配音视频保存到你的相册",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {

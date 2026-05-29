@@ -18,6 +18,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 const PLATFORMS = [
   {emoji: '🎬', name: '本地视频'},
   {emoji: '🎵', name: '抖音'},
+  {emoji: '📺', name: 'B站'},
 ];
 
 export default function HomeScreen({navigation}: Props) {
@@ -112,7 +113,7 @@ export default function HomeScreen({navigation}: Props) {
               </TouchableOpacity>
             </View>
             <Text style={styles.warnText}>
-              ✅ 仅支持抖音链接。其他平台请用「📁 本地视频」
+              ✅ 支持抖音、B站链接。其他平台请用「📁 本地视频」
             </Text>
           </View>
         ) : !filePath ? (

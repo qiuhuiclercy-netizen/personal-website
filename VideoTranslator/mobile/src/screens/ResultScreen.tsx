@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {useVideoPlayer, VideoView} from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as MediaLibrary from 'expo-media-library';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../App';
 import {getDownloadUrl} from '../services/api';
@@ -28,14 +29,25 @@ export default function ResultScreen({navigation, route}: Props) {
   const [saved, setSaved] = useState(false);
 
   const download = async () => {
+    // 1. 申请相册权限
+    const perm = await MediaLibrary.requestPermissionsAsync(true);
+    if (!perm.granted) {
+      Alert.alert(
+        '需要相册权限',
+        '请在系统设置里允许 VideoDub AI 访问相册，否则视频无法保存',
+      );
+      return;
+    }
+
     setDownloading(true);
     setDlProgress(0);
     try {
-      const filename = `dubbed_${jobId}.mp4`;
-      const targetPath = `${FileSystem.documentDirectory}${filename}`;
+      // 2. 先下载到 App 缓存目录
+      const filename = `VideoDub_${jobId}.mp4`;
+      const cachePath = `${FileSystem.cacheDirectory}${filename}`;
       const downloadResumable = FileSystem.createDownloadResumable(
         videoUrl,
-        targetPath,
+        cachePath,
         {},
         ({totalBytesWritten, totalBytesExpectedToWrite}) => {
           if (totalBytesExpectedToWrite > 0) {
@@ -44,16 +56,34 @@ export default function ResultScreen({navigation, route}: Props) {
         },
       );
       const res = await downloadResumable.downloadAsync();
-      setDownloading(false);
-      if (res?.uri) {
-        setSaved(true);
-        Alert.alert('下载完成', `已保存：${res.uri}`);
-      } else {
+      if (!res?.uri) {
+        setDownloading(false);
         Alert.alert('下载失败', '未返回文件路径');
+        return;
       }
+
+      // 3. 写入系统相册（Movies/VideoDub AI 相册）
+      const asset = await MediaLibrary.createAssetAsync(res.uri);
+      try {
+        const album = await MediaLibrary.getAlbumAsync('VideoDub AI');
+        if (album) {
+          await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+        } else {
+          await MediaLibrary.createAlbumAsync('VideoDub AI', asset, false);
+        }
+      } catch {
+        // 部分设备不允许自建相册，资产已经在相册主目录里，忽略此错误
+      }
+
+      // 4. 清理缓存文件
+      try { await FileSystem.deleteAsync(res.uri, {idempotent: true}); } catch {}
+
+      setDownloading(false);
+      setSaved(true);
+      Alert.alert('保存完成', '中文配音视频已存入手机相册（VideoDub AI 相册）。');
     } catch (e) {
       setDownloading(false);
-      Alert.alert('下载失败', e instanceof Error ? e.message : String(e));
+      Alert.alert('保存失败', e instanceof Error ? e.message : String(e));
     }
   };
 
