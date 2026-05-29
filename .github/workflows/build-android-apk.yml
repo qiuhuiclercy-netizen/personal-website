@@ -43,32 +43,43 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: 🔨 Build release APK
+        id: build
+        continue-on-error: true
         working-directory: VideoTranslator/mobile/android
         run: |
           set -o pipefail
           ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
-          echo "GRADLE_EXIT=$?"
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
 
-      - name: 🔍 Inspect outputs (emit annotations)
+      - name: 📋 Write diagnostic summary (public)
         if: always()
         run: |
-          OUTDIR="VideoTranslator/mobile/android/app/build/outputs"
-          APKS=$(find "$OUTDIR" -name "*.apk" -type f 2>/dev/null)
-          if [ -z "$APKS" ]; then
-            echo "::error title=No APK::find returned no .apk files under $OUTDIR"
-            # Dump dir tree as annotation so we can read structure
-            TREE=$(find VideoTranslator/mobile/android/app/build -maxdepth 6 -type d 2>/dev/null | head -50 | tr '\n' ',')
-            echo "::error title=BuildDirs::$TREE"
-            # Last 20 lines of gradle log (also visible in annotations)
-            LAST=$(tail -20 /tmp/gradle-build.log 2>/dev/null | tr '\n' '|')
-            echo "::error title=LogTail::$LAST"
+          echo "## Build #${{ github.run_number }} diagnostic" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### APK files found" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find VideoTranslator/mobile/android/app/build/outputs -name "*.apk" -type f 2>/dev/null | head -20 >> $GITHUB_STEP_SUMMARY || echo "(none)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build outputs directory" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find VideoTranslator/mobile/android/app/build -maxdepth 5 -type d 2>/dev/null | head -40 >> $GITHUB_STEP_SUMMARY || echo "(none)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Gradle log tail (last 100 lines)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -100 /tmp/gradle-build.log 2>/dev/null >> $GITHUB_STEP_SUMMARY || echo "(no log)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: ❌ Fail if APK missing
+        if: always()
+        run: |
+          APK=$(find VideoTranslator/mobile/android/app/build/outputs -name "*.apk" -type f 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            echo "No APK produced - see step summary for details"
             exit 1
-          else
-            echo "$APKS" | while read -r apk; do
-              SIZE=$(stat -c%s "$apk" 2>/dev/null || stat -f%z "$apk")
-              echo "::notice title=APK::$apk ($SIZE bytes)"
-            done
           fi
+          echo "APK at: $APK"
 
       - name: 📤 Upload APK
         if: success()
