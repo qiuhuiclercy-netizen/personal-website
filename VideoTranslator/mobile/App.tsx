@@ -4,6 +4,7 @@ import {NavigationContainer, DarkTheme} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import {ShareIntentProvider} from 'expo-share-intent';
 
 import HomeScreen from './src/screens/HomeScreen';
 import VoiceSelectScreen from './src/screens/VoiceSelectScreen';
@@ -46,10 +47,11 @@ const navTheme = {
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{flex: 1, backgroundColor: '#0D0F1A'}}>
-      <SafeAreaProvider>
-        <StatusBar style="light" />
-        <NavigationContainer theme={navTheme}>
+    <ShareIntentProvider>
+      <GestureHandlerRootView style={{flex: 1, backgroundColor: '#0D0F1A'}}>
+        <SafeAreaProvider>
+          <StatusBar style="light" />
+          <NavigationContainer theme={navTheme}>
           <Stack.Navigator
             initialRouteName="Home"
             screenOptions={{
@@ -80,7 +82,8 @@ export default function App() {
             />
           </Stack.Navigator>
         </NavigationContainer>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ShareIntentProvider>
   );
 }

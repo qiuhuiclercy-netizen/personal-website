@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Clipboard from 'expo-clipboard';
+import {useShareIntent} from 'expo-share-intent';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../App';
 
@@ -27,6 +28,32 @@ export default function HomeScreen({navigation}: Props) {
   const [filePath, setFilePath] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>('video/mp4');
+
+  // 接收来自其他 App（抖音/B站/相册）的分享
+  const {hasShareIntent, shareIntent, resetShareIntent} = useShareIntent();
+  useEffect(() => {
+    if (!hasShareIntent || !shareIntent) return;
+
+    // 优先处理文件分享（视频文件）
+    if (shareIntent.files && shareIntent.files.length > 0) {
+      const f = shareIntent.files[0];
+      const path = f.path?.startsWith('file://') ? f.path : `file://${f.path}`;
+      setFilePath(path);
+      setFileName(f.fileName ?? 'shared_video.mp4');
+      setMimeType(f.mimeType ?? 'video/mp4');
+      setTab('file');
+      resetShareIntent();
+      return;
+    }
+
+    // 其次处理文本/URL 分享（抖音分享文案、B站短链等）
+    const text = shareIntent.text ?? shareIntent.webUrl ?? '';
+    if (text) {
+      setUrl(text);
+      setTab('url');
+      resetShareIntent();
+    }
+  }, [hasShareIntent, shareIntent, resetShareIntent]);
 
   const pickFile = async () => {
     try {
