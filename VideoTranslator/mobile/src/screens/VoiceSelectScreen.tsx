@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -28,11 +28,10 @@ export default function VoiceSelectScreen({navigation, route}: Props) {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState('播音员');
   const [previewing, setPreviewing] = useState<string | null>(null);
-  const [currentUrl, setCurrentUrl] = useState<string | null>(null);
 
-  const player = useAudioPlayer(currentUrl);
+  // 用一个空 source 创建播放器，靠 replace() 切换音源（避免 hook 重建 player 引用导致崩溃）
+  const player = useAudioPlayer(null);
   const status = useAudioPlayerStatus(player);
-  const stoppedRef = useRef(false);
 
   useEffect(() => {
     getVoices()
@@ -43,45 +42,44 @@ export default function VoiceSelectScreen({navigation, route}: Props) {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-    return () => {
-      stoppedRef.current = true;
-      try {
-        player.remove();
-      } catch {}
-    };
   }, []);
 
   useEffect(() => {
-    if (status.didJustFinish) {
+    if (status?.didJustFinish) {
       setPreviewing(null);
     }
-  }, [status.didJustFinish]);
+  }, [status?.didJustFinish]);
 
-  const onPreview = async (name: string) => {
+  const onPreview = (name: string) => {
     try {
+      // 再次点击同一角色 = 停止
       if (previewing === name) {
-        player.pause();
+        try { player.pause(); } catch {}
         setPreviewing(null);
         return;
       }
+      // 停掉当前播放的，切换音源，然后播放
+      try { player.pause(); } catch {}
       const url = voicePreviewUrl(name);
-      setCurrentUrl(url);
+      player.replace({uri: url});
       setPreviewing(name);
-      // small delay to let player swap source
+      // 给 native 模块一点时间加载新音源
       setTimeout(() => {
-        player.seekTo(0);
-        player.play();
-      }, 100);
+        try {
+          player.play();
+        } catch (e) {
+          setPreviewing(null);
+          Alert.alert('试听失败', e instanceof Error ? e.message : String(e));
+        }
+      }, 150);
     } catch (e) {
       setPreviewing(null);
-      Alert.alert('试听失败', String(e));
+      Alert.alert('试听失败', e instanceof Error ? e.message : String(e));
     }
   };
 
   const onStart = () => {
-    try {
-      player.pause();
-    } catch {}
+    try { player.pause(); } catch {}
     navigation.navigate('Progress', {
       isUrl: route.params.isUrl,
       url: route.params.url,
