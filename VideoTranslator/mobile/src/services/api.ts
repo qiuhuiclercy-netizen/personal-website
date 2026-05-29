@@ -24,26 +24,14 @@ export interface JobStatus {
 function extractError(e: unknown): string {
   if (e instanceof AxiosError) {
     const data = e.response?.data as {detail?: string} | string | undefined;
-    if (data && typeof data === 'object' && data.detail) {
-      return data.detail;
-    }
-    if (typeof data === 'string') {
-      return data;
-    }
-    if (e.code === 'ECONNABORTED') {
-      return '连接超时，请检查网络或稍后重试';
-    }
-    if (e.code === 'ERR_NETWORK') {
-      return '无法连接服务器，请检查网络';
-    }
-    if (e.response?.status === 429) {
-      return '服务器繁忙，请稍后重试';
-    }
-    if (e.response?.status === 413) {
-      return '文件太大，请压缩后再上传';
-    }
+    if (data && typeof data === 'object' && data.detail) return data.detail;
+    if (typeof data === 'string') return data;
+    if (e.code === 'ECONNABORTED') return '连接超时，请检查网络或稍后重试';
+    if (e.code === 'ERR_NETWORK') return '无法连接服务器，请检查网络';
+    if (e.response?.status === 429) return '服务器繁忙，请稍后重试';
+    if (e.response?.status === 413) return '文件太大，请压缩后再上传';
   }
-  return String(e);
+  return e instanceof Error ? e.message : String(e);
 }
 
 export async function getVoices(): Promise<Record<string, VoiceInfo>> {
@@ -74,14 +62,15 @@ export async function translateUrl(
 export async function translateFile(
   filePath: string,
   fileName: string,
+  mimeType: string,
   character: string,
   onProgress?: (percent: number) => void,
 ): Promise<string> {
   const form = new FormData();
   form.append('file', {
-    uri: filePath.startsWith('file://') ? filePath : `file://${filePath}`,
+    uri: filePath,
     name: fileName,
-    type: 'video/mp4',
+    type: mimeType || 'video/mp4',
   } as unknown as Blob);
   form.append('character', character);
   form.append('tts_provider', 'xunfei');
@@ -94,9 +83,7 @@ export async function translateFile(
         headers: {'Content-Type': 'multipart/form-data'},
         timeout: 600000,
         onUploadProgress: e => {
-          if (e.total && onProgress) {
-            onProgress(e.loaded / e.total);
-          }
+          if (e.total && onProgress) onProgress(e.loaded / e.total);
         },
       },
     );

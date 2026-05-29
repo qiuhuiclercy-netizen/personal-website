@@ -19,7 +19,7 @@ export default function ProgressScreen({navigation, route}: Props) {
   const [progress, setProgress] = useState(0.05);
   const [activeStep, setActiveStep] = useState(-1);
   const [error, setError] = useState<string | null>(null);
-  const pollTimer = useRef<NodeJS.Timeout | null>(null);
+  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stoppedRef = useRef(false);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function ProgressScreen({navigation, route}: Props) {
     for (let i = 0; i < STEPS.length; i++) {
       if (STEPS[i].keywords.some(k => msg.includes(k))) return i;
     }
-    return activeStep;
+    return -1;
   };
 
   const poll = (jobId: string) => {
@@ -45,8 +45,8 @@ export default function ProgressScreen({navigation, route}: Props) {
         const msg = job.progress ?? '';
         setStatus(msg);
         const step = detectStep(msg);
-        setActiveStep(step);
         if (step >= 0) {
+          setActiveStep(step);
           setProgress(0.15 + ((step + 1) / STEPS.length) * 0.8);
         }
         if (job.status === 'done') {
@@ -58,7 +58,7 @@ export default function ProgressScreen({navigation, route}: Props) {
           return;
         }
       } catch (e) {
-        setError(String(e));
+        setError(e instanceof Error ? e.message : String(e));
         return;
       }
       pollTimer.current = setTimeout(tick, 2000);
@@ -75,6 +75,7 @@ export default function ProgressScreen({navigation, route}: Props) {
         jobId = await translateFile(
           route.params.filePath!,
           'video.mp4',
+          route.params.mimeType || 'video/mp4',
           route.params.character,
           p => setProgress(p * 0.15),
         );
@@ -113,28 +114,21 @@ export default function ProgressScreen({navigation, route}: Props) {
           return (
             <View key={s.id} style={styles.stepRow}>
               <View style={[styles.stepBar, {backgroundColor: color}]} />
-              <Text
-                style={{
-                  color,
-                  fontSize: 14,
-                  fontWeight: isActive ? '600' : '400',
-                }}>
-                {s.label}
-                {isDone ? ' ✓' : ''}
+              <Text style={{
+                color, fontSize: 14,
+                fontWeight: isActive ? '600' : '400',
+              }}>
+                {s.label}{isDone ? ' ✓' : ''}
               </Text>
               {isActive && (
-                <ActivityIndicator
-                  size="small"
-                  color={color}
-                  style={{marginLeft: 8}}
-                />
+                <ActivityIndicator size="small" color={color} style={{marginLeft: 8}} />
               )}
             </View>
           );
         })}
       </View>
 
-      <Text style={styles.status}>{status}</Text>
+      <Text style={styles.statusLine}>{status}</Text>
     </View>
   );
 }
@@ -143,17 +137,14 @@ const styles = StyleSheet.create({
   container: {flex: 1, padding: 24},
   pct: {color: '#fff', fontSize: 36, fontWeight: '700'},
   barOuter: {
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginTop: 12,
+    height: 8, backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4, overflow: 'hidden', marginTop: 12,
   },
   barInner: {height: '100%', backgroundColor: '#7C6AFF', borderRadius: 4},
   stepsList: {marginTop: 28},
   stepRow: {flexDirection: 'row', alignItems: 'center', paddingVertical: 6},
   stepBar: {width: 3, height: 32, marginRight: 12, borderRadius: 1.5},
-  status: {color: '#888', fontSize: 13, textAlign: 'center', marginTop: 24},
+  statusLine: {color: '#888', fontSize: 13, textAlign: 'center', marginTop: 24},
   errorBox: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24},
   errorTitle: {color: '#fff', fontSize: 22, fontWeight: '700', marginTop: 16},
   errorMsg: {color: '#F87171', fontSize: 14, textAlign: 'center', marginTop: 12},

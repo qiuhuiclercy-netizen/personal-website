@@ -7,9 +7,9 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Clipboard,
 } from 'react-native';
-import DocumentPicker from 'react-native-document-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Clipboard from 'expo-clipboard';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../App';
 
@@ -29,24 +29,27 @@ export default function HomeScreen({navigation}: Props) {
   const [url, setUrl] = useState('');
   const [filePath, setFilePath] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [mimeType, setMimeType] = useState<string>('video/mp4');
 
   const pickFile = async () => {
     try {
-      const res = await DocumentPicker.pickSingle({
-        type: [DocumentPicker.types.video],
-        copyTo: 'cachesDirectory',
+      const res = await DocumentPicker.getDocumentAsync({
+        type: 'video/*',
+        copyToCacheDirectory: true,
+        multiple: false,
       });
-      setFilePath(res.fileCopyUri ?? res.uri);
-      setFileName(res.name ?? 'video.mp4');
+      if (res.canceled || !res.assets || res.assets.length === 0) return;
+      const a = res.assets[0];
+      setFilePath(a.uri);
+      setFileName(a.name);
+      setMimeType(a.mimeType || 'video/mp4');
     } catch (e) {
-      if (!DocumentPicker.isCancel(e)) {
-        Alert.alert('选择失败', String(e));
-      }
+      Alert.alert('选择失败', String(e));
     }
   };
 
   const onPaste = async () => {
-    const text = await Clipboard.getString();
+    const text = await Clipboard.getStringAsync();
     if (text) setUrl(text);
   };
 
@@ -64,6 +67,7 @@ export default function HomeScreen({navigation}: Props) {
       url: tab === 'url' ? url.trim() : undefined,
       filePath: tab === 'file' ? filePath ?? undefined : undefined,
       fileName: tab === 'file' ? fileName ?? undefined : undefined,
+      mimeType: tab === 'file' ? mimeType : undefined,
     });
   };
 
@@ -172,13 +176,9 @@ const styles = StyleSheet.create({
   },
   stepRow: {flexDirection: 'row', alignItems: 'center', marginBottom: 16},
   stepBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 24, height: 24, borderRadius: 12,
     backgroundColor: '#7C6AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
+    justifyContent: 'center', alignItems: 'center', marginRight: 10,
   },
   stepBadgeText: {color: '#fff', fontSize: 12, fontWeight: '700'},
   stepTitle: {color: '#fff', fontSize: 15, fontWeight: '600'},
@@ -189,70 +189,43 @@ const styles = StyleSheet.create({
   tabTextActive: {color: '#7C6AFF', fontWeight: '600'},
   urlInputRow: {flexDirection: 'row', alignItems: 'center'},
   input: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: '#fff',
-    fontSize: 14,
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+    color: '#fff', fontSize: 14,
   },
   iconBtn: {
-    width: 44,
-    height: 44,
-    marginLeft: 8,
+    width: 44, height: 44, marginLeft: 8,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 10, justifyContent: 'center', alignItems: 'center',
   },
   warnText: {color: '#FFA500', fontSize: 11, marginTop: 8},
   dropZone: {
-    height: 110,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    height: 110, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12, justifyContent: 'center', alignItems: 'center',
   },
   dropZoneIcon: {fontSize: 28, marginBottom: 8},
   dropZoneText: {color: '#888', fontSize: 13},
   filePreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
+    flexDirection: 'row', alignItems: 'center', padding: 12,
     backgroundColor: 'rgba(72,187,120,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(72,187,120,0.3)',
-    borderRadius: 10,
+    borderWidth: 1, borderColor: 'rgba(72,187,120,0.3)', borderRadius: 10,
   },
   fileName: {flex: 1, color: '#fff', fontSize: 13, marginHorizontal: 10},
   platformsTitle: {color: '#fff', fontWeight: '600', fontSize: 14, marginBottom: 12},
-  platformsWrap: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
+  platformsWrap: {flexDirection: 'row', flexWrap: 'wrap'},
   platformChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    marginRight: 8,
-    marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    marginRight: 8, marginBottom: 8,
   },
   platformText: {color: '#fff', fontSize: 12, marginLeft: 6},
   primaryBtn: {
-    height: 54,
-    borderRadius: 14,
-    backgroundColor: '#7C6AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
+    height: 54, borderRadius: 14, backgroundColor: '#7C6AFF',
+    justifyContent: 'center', alignItems: 'center', marginTop: 16,
   },
   primaryBtnText: {color: '#fff', fontSize: 16, fontWeight: '700'},
 });

@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import Sound from 'react-native-sound';
+import {useAudioPlayer, useAudioPlayerStatus} from 'expo-audio';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../App';
 import {getVoices, voicePreviewUrl, VoiceInfo} from '../services/api';
@@ -23,14 +23,16 @@ const VOICE_EMOJIS: Record<string, string> = {
   '男主播': '🎙️',
 };
 
-Sound.setCategory('Playback');
-
 export default function VoiceSelectScreen({navigation, route}: Props) {
   const [voices, setVoices] = useState<Record<string, VoiceInfo>>({});
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState('播音员');
-  const [playing, setPlaying] = useState<string | null>(null);
-  const soundRef = useRef<Sound | null>(null);
+  const [previewing, setPreviewing] = useState<string | null>(null);
+  const [currentUrl, setCurrentUrl] = useState<string | null>(null);
+
+  const player = useAudioPlayer(currentUrl);
+  const status = useAudioPlayerStatus(player);
+  const stoppedRef = useRef(false);
 
   useEffect(() => {
     getVoices()
@@ -42,47 +44,49 @@ export default function VoiceSelectScreen({navigation, route}: Props) {
       })
       .catch(() => setLoading(false));
     return () => {
-      soundRef.current?.release();
+      stoppedRef.current = true;
+      try {
+        player.remove();
+      } catch {}
     };
   }, []);
 
-  const preview = (name: string) => {
-    if (playing === name) {
-      soundRef.current?.stop(() => {
-        soundRef.current?.release();
-        soundRef.current = null;
-        setPlaying(null);
-      });
-      return;
+  useEffect(() => {
+    if (status.didJustFinish) {
+      setPreviewing(null);
     }
-    soundRef.current?.stop(() => soundRef.current?.release());
-    setPlaying(name);
-    const sound = new Sound(voicePreviewUrl(name), '', err => {
-      if (err) {
-        setPlaying(null);
-        Alert.alert('试听失败', err.message);
+  }, [status.didJustFinish]);
+
+  const onPreview = async (name: string) => {
+    try {
+      if (previewing === name) {
+        player.pause();
+        setPreviewing(null);
         return;
       }
-      sound.play(success => {
-        sound.release();
-        if (soundRef.current === sound) {
-          soundRef.current = null;
-          setPlaying(null);
-        }
-        if (!success) {
-          Alert.alert('试听失败', '音频播放出错');
-        }
-      });
-    });
-    soundRef.current = sound;
+      const url = voicePreviewUrl(name);
+      setCurrentUrl(url);
+      setPreviewing(name);
+      // small delay to let player swap source
+      setTimeout(() => {
+        player.seekTo(0);
+        player.play();
+      }, 100);
+    } catch (e) {
+      setPreviewing(null);
+      Alert.alert('试听失败', String(e));
+    }
   };
 
   const onStart = () => {
-    soundRef.current?.stop();
+    try {
+      player.pause();
+    } catch {}
     navigation.navigate('Progress', {
       isUrl: route.params.isUrl,
       url: route.params.url,
       filePath: route.params.filePath,
+      mimeType: route.params.mimeType,
       character: selected,
     });
   };
@@ -112,7 +116,7 @@ export default function VoiceSelectScreen({navigation, route}: Props) {
 
         {Object.entries(voices).map(([name, info]) => {
           const isSelected = name === selected;
-          const isPlaying = playing === name;
+          const isPlaying = previewing === name;
           return (
             <TouchableOpacity
               key={name}
@@ -134,7 +138,7 @@ export default function VoiceSelectScreen({navigation, route}: Props) {
                 <Text style={styles.voiceDesc}>{info.desc}</Text>
               </View>
               <TouchableOpacity
-                onPress={() => preview(name)}
+                onPress={() => onPreview(name)}
                 style={[styles.playBtn, isPlaying && styles.playBtnActive]}>
                 <Text style={{fontSize: 20, color: '#fff'}}>
                   {isPlaying ? '■' : '▶'}
@@ -161,67 +165,46 @@ const styles = StyleSheet.create({
   center: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   scroll: {padding: 20, paddingBottom: 40},
   sourceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
+    flexDirection: 'row', alignItems: 'center', padding: 14,
     backgroundColor: 'rgba(124,106,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(124,106,255,0.3)',
-    borderRadius: 12,
-    marginBottom: 24,
+    borderWidth: 1, borderColor: 'rgba(124,106,255,0.3)',
+    borderRadius: 12, marginBottom: 24,
   },
   sourceText: {flex: 1, color: '#fff', fontSize: 13, marginLeft: 8},
   title: {color: '#fff', fontSize: 16, fontWeight: '700'},
   hint: {color: '#888', fontSize: 12, marginTop: 6, marginBottom: 16},
   voiceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
+    flexDirection: 'row', alignItems: 'center', padding: 16,
     backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 16,
-    marginBottom: 12,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16, marginBottom: 12,
   },
   voiceCardActive: {
     backgroundColor: 'rgba(124,106,255,0.15)',
-    borderColor: '#7C6AFF',
-    borderWidth: 2,
+    borderColor: '#7C6AFF', borderWidth: 2,
   },
   voiceAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 52, height: 52, borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center', alignItems: 'center',
   },
   voiceName: {color: '#fff', fontSize: 16, fontWeight: '700'},
   voiceDesc: {color: '#888', fontSize: 12, marginTop: 4},
   selectedBadge: {
-    marginLeft: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: '#7C6AFF',
-    borderRadius: 6,
+    marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2,
+    backgroundColor: '#7C6AFF', borderRadius: 6,
   },
   selectedBadgeText: {color: '#fff', fontSize: 10, fontWeight: '700'},
   playBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center', alignItems: 'center',
   },
   playBtnActive: {backgroundColor: '#FF6AAD'},
   footer: {padding: 20, backgroundColor: '#0D0F1A'},
   primaryBtn: {
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: '#7C6AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    height: 56, borderRadius: 14, backgroundColor: '#7C6AFF',
+    justifyContent: 'center', alignItems: 'center',
   },
   primaryBtnText: {color: '#fff', fontSize: 17, fontWeight: '700'},
 });
