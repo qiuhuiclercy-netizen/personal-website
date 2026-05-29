@@ -84,6 +84,7 @@ export default function VoiceSelectScreen({navigation, route}: Props) {
       isUrl: route.params.isUrl,
       url: route.params.url,
       filePath: route.params.filePath,
+      fileName: route.params.fileName,
       mimeType: route.params.mimeType,
       character: selected,
     });

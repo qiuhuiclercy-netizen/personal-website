@@ -74,7 +74,7 @@ export default function ProgressScreen({navigation, route}: Props) {
       } else {
         jobId = await translateFile(
           route.params.filePath!,
-          'video.mp4',
+          route.params.fileName || 'video.mp4',
           route.params.mimeType || 'video/mp4',
           route.params.character,
           p => setProgress(p * 0.15),

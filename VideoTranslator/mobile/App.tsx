@@ -24,6 +24,7 @@ export type RootStackParamList = {
     isUrl: boolean;
     url?: string;
     filePath?: string;
+    fileName?: string;
     mimeType?: string;
     character: string;
   };
