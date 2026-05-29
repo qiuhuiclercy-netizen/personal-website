@@ -18,10 +18,6 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 const PLATFORMS = [
   {emoji: '🎬', name: '本地视频'},
   {emoji: '🎵', name: '抖音'},
-  {emoji: '📺', name: 'B站'},
-  {emoji: '▶️', name: 'YouTube'},
-  {emoji: '🟣', name: '腾讯视频'},
-  {emoji: '🎵', name: 'TikTok'},
 ];
 
 export default function HomeScreen({navigation}: Props) {
@@ -116,7 +112,7 @@ export default function HomeScreen({navigation}: Props) {
               </TouchableOpacity>
             </View>
             <Text style={styles.warnText}>
-              提示：B站/YouTube 链接如下载失败，请改用本地上传
+              ✅ 仅支持抖音链接。其他平台请用「📁 本地视频」
             </Text>
           </View>
         ) : !filePath ? (
