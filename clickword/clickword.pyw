@@ -1,166 +1,120 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-ClickWord - 系统级 AI 划词解释工具
-双击任意位置的单词，弹出 AI 解释
-"""
+"""ClickWord - 系统级 AI 划词解释工具"""
 
-import sys
-import os
-import json
-import threading
-import time
-import webbrowser
-import urllib.parse
-import traceback
+import sys, os, json, threading, time, webbrowser, urllib.parse, traceback
+import ctypes
 import tkinter as tk
 from tkinter import font as tkfont, messagebox
 
 # ─── 依赖检查 ────────────────────────────────────────────────────────────────
-
 _missing = []
-
 try:
-    import win32clipboard
-    import win32con
+    import win32clipboard, win32con, win32gui
 except ImportError:
     _missing.append("pywin32")
-
 try:
-    import pynput.mouse as _mouse_mod
-    import pynput.keyboard as _keyboard_mod
+    import pynput.mouse as _mm, pynput.keyboard as _km
 except ImportError:
     _missing.append("pynput")
-
 try:
-    from openai import OpenAI as _OpenAI
+    from openai import OpenAI as _OAI
 except ImportError:
     _missing.append("openai")
-
 try:
-    import pystray as _pystray
-    from PIL import Image as _Image, ImageDraw as _ImageDraw, ImageFont as _ImageFont
+    import pystray as _ps
+    from PIL import Image as _Img, ImageDraw as _IDraw, ImageFont as _IFont
 except ImportError:
     _missing.append("pystray pillow")
 
 if _missing:
-    _r = tk.Tk(); _r.withdraw()
-    messagebox.showerror(
-        "ClickWord - 缺少依赖",
-        f"请先运行 install.bat 安装以下依赖：\n\n"
-        f"pip install {' '.join(_missing)}"
-    )
+    r = tk.Tk(); r.withdraw()
+    messagebox.showerror("ClickWord 缺少依赖",
+        f"请先运行 install.bat：\npip install {' '.join(_missing)}")
     sys.exit(1)
 
-# 依赖全部通过后绑定名称
-mouse_mod = _mouse_mod
-keyboard_mod = _keyboard_mod
-OpenAI = _OpenAI
-pystray = _pystray
-Image = _Image
-ImageDraw = _ImageDraw
-ImageFont = _ImageFont
+mouse_mod, keyboard_mod, OpenAI = _mm, _km, _OAI
+pystray, Image, ImageDraw, ImageFont = _ps, _Img, _IDraw, _IFont
 
 # ─── 配置 ─────────────────────────────────────────────────────────────────────
-
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_DIR     = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(APP_DIR, "config.json")
-
-_DEFAULT_CONFIG = {
-    "api_key": "",
-    "api_base": "https://api.deepseek.com",
+_DEFAULT = {
+    "api_key": "", "api_base": "https://api.deepseek.com",
     "model": "deepseek-chat",
-    "double_click_interval": 0.35,
-    "cooldown": 0.8,
-    "max_word_length": 300,
+    "double_click_interval": 0.35, "cooldown": 0.8, "max_word_length": 300,
 }
-
-THEME = {
-    "bg":           "#1e1e2e",
-    "text":         "#cdd6f4",
-    "subtext":      "#a6adc8",
-    "accent":       "#89b4fa",
-    "secondary_bg": "#313244",
-    "link":         "#89dceb",
-    "close":        "#f38ba8",
-    "border":       "#45475a",
-}
-
-FONT = "Microsoft YaHei UI"
-
 
 def load_config():
-    cfg = _DEFAULT_CONFIG.copy()
+    cfg = _DEFAULT.copy()
     if os.path.exists(CONFIG_FILE):
         try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                cfg.update(json.load(f))
-        except Exception:
-            pass
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f: cfg.update(json.load(f))
+        except: pass
     return cfg
-
 
 def save_config(cfg):
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
 
+# ─── 颜色 & 字体 ───────────────────────────────────────────────────────────────
+OUTER   = "#cdd5e0"   # 外框色（产生阴影感）
+CARD    = "#ffffff"   # 卡片白
+TITLE_C = "#1e293b"   # 标题深色
+BODY_C  = "#475569"   # 正文中灰
+SUB_C   = "#94a3b8"   # 次要/关闭按钮
+ACCENT  = "#6366f1"   # 紫蓝强调
+SEP_C   = "#f1f5f9"   # 分割线
+LINK_BG = "#eff6ff"
+LINK_FG = "#3b82f6"
+COPY_BG = "#f8fafc"
+FONT    = "Microsoft YaHei UI"
 
-# ─── 初次设置对话框 ────────────────────────────────────────────────────────────
+def _round_window(hwnd, w, h, r=20):
+    """用 Win32 API 给窗口裁剪圆角"""
+    try:
+        rgn = win32gui.CreateRoundRectRgn(0, 0, w + 1, h + 1, r * 2, r * 2)
+        win32gui.SetWindowRgn(hwnd, rgn, True)
+    except Exception:
+        pass
 
+# ─── 初次设置 ─────────────────────────────────────────────────────────────────
 def show_setup_dialog():
-    t = THEME
     result = {"api_key": None}
-
     dlg = tk.Tk()
     dlg.title("ClickWord - 初次设置")
-    dlg.geometry("500x280")
-    dlg.configure(bg=t["bg"])
+    dlg.geometry("480x290")
+    dlg.configure(bg="#f8fafc")
     dlg.resizable(False, False)
     dlg.eval("tk::PlaceWindow . center")
 
     tk.Label(dlg, text="欢迎使用 ClickWord",
-             font=tkfont.Font(family=FONT, size=15, weight="bold"),
-             fg=t["accent"], bg=t["bg"]).pack(pady=(28, 4))
-
+             font=tkfont.Font(family=FONT, size=16, weight="bold"),
+             fg=ACCENT, bg="#f8fafc").pack(pady=(32, 4))
     tk.Label(dlg, text="请输入你的 DeepSeek API Key 以启用 AI 解释",
-             font=tkfont.Font(family=FONT, size=10),
-             fg=t["subtext"], bg=t["bg"]).pack(pady=(0, 18))
+             font=tkfont.Font(family=FONT, size=10), fg=SUB_C, bg="#f8fafc").pack(pady=(0, 18))
 
-    ef = tk.Frame(dlg, bg=t["bg"])
-    ef.pack(fill=tk.X, padx=50)
-    entry = tk.Entry(ef,
-                     font=tkfont.Font(family=FONT, size=11),
-                     bg=t["secondary_bg"], fg=t["text"],
-                     insertbackground=t["accent"],
-                     relief="flat", show="*")
-    entry.pack(fill=tk.X, ipady=8, padx=1)
+    ef = tk.Frame(dlg, bg="#f8fafc"); ef.pack(fill=tk.X, padx=50)
+    entry = tk.Entry(ef, font=tkfont.Font(family=FONT, size=11),
+                     bg=CARD, fg=TITLE_C, insertbackground=ACCENT,
+                     relief="solid", bd=1, show="*")
+    entry.pack(fill=tk.X, ipady=9)
 
     tk.Label(dlg, text="获取 Key：platform.deepseek.com/api_keys",
-             font=tkfont.Font(family=FONT, size=9),
-             fg=t["subtext"], bg=t["bg"]).pack(pady=(8, 20))
+             font=tkfont.Font(family=FONT, size=9), fg=SUB_C, bg="#f8fafc").pack(pady=(8, 22))
 
-    bf = tk.Frame(dlg, bg=t["bg"])
-    bf.pack()
-
+    bf = tk.Frame(dlg, bg="#f8fafc"); bf.pack()
     def confirm():
-        key = entry.get().strip()
-        if not key:
-            messagebox.showwarning("提示", "请输入 API Key", parent=dlg)
-            return
-        result["api_key"] = key
-        dlg.destroy()
+        k = entry.get().strip()
+        if not k: messagebox.showwarning("提示", "请输入 API Key", parent=dlg); return
+        result["api_key"] = k; dlg.destroy()
 
-    tk.Button(bf, text="开始使用",
-              font=tkfont.Font(family=FONT, size=11),
-              bg=t["accent"], fg=t["bg"],
-              relief="flat", padx=22, pady=6, cursor="hand2",
-              command=confirm).pack(side=tk.LEFT, padx=8)
-
-    tk.Button(bf, text="取消",
-              font=tkfont.Font(family=FONT, size=11),
-              bg=t["secondary_bg"], fg=t["text"],
-              relief="flat", padx=22, pady=6, cursor="hand2",
-              command=dlg.destroy).pack(side=tk.LEFT)
+    tk.Button(bf, text="开始使用", font=tkfont.Font(family=FONT, size=11),
+              bg=ACCENT, fg="white", relief="flat", padx=22, pady=7,
+              cursor="hand2", command=confirm).pack(side=tk.LEFT, padx=8)
+    tk.Button(bf, text="取消", font=tkfont.Font(family=FONT, size=11),
+              bg=SEP_C, fg=BODY_C, relief="flat", padx=22, pady=7,
+              cursor="hand2", command=dlg.destroy).pack(side=tk.LEFT)
 
     entry.focus_set()
     dlg.bind("<Return>", lambda e: confirm())
@@ -168,315 +122,230 @@ def show_setup_dialog():
     dlg.mainloop()
     return result
 
-
-# ─── 剪贴板工具 ───────────────────────────────────────────────────────────────
-
-class Clipboard:
+# ─── 剪贴板 ───────────────────────────────────────────────────────────────────
+class CB:
     @staticmethod
-    def get() -> str:
+    def get():
         try:
             win32clipboard.OpenClipboard()
-            try:
-                return win32clipboard.GetClipboardData(win32con.CF_UNICODETEXT) or ""
-            except Exception:
-                return ""
-            finally:
-                win32clipboard.CloseClipboard()
-        except Exception:
-            return ""
+            try: return win32clipboard.GetClipboardData(win32con.CF_UNICODETEXT) or ""
+            except: return ""
+            finally: win32clipboard.CloseClipboard()
+        except: return ""
 
     @staticmethod
-    def set(text: str):
+    def set(text):
         try:
-            win32clipboard.OpenClipboard()
-            win32clipboard.EmptyClipboard()
-            if text:
-                win32clipboard.SetClipboardData(win32con.CF_UNICODETEXT, text)
+            win32clipboard.OpenClipboard(); win32clipboard.EmptyClipboard()
+            if text: win32clipboard.SetClipboardData(win32con.CF_UNICODETEXT, text)
             win32clipboard.CloseClipboard()
-        except Exception:
-            try:
-                win32clipboard.CloseClipboard()
-            except Exception:
-                pass
-
+        except:
+            try: win32clipboard.CloseClipboard()
+            except: pass
 
 # ─── 主应用 ────────────────────────────────────────────────────────────────────
+class App:
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.client  = OpenAI(api_key=cfg["api_key"], base_url=cfg["api_base"])
+        self.last_click  = 0.0
+        self.last_lookup = 0.0
+        self.busy    = False
+        self.popup   = None
+        self.expl_var = None
+        self.pbounds  = None
 
-class ClickWordApp:
-    def __init__(self, config: dict):
-        self.config = config
-        self.client = OpenAI(api_key=config["api_key"], base_url=config["api_base"])
-
-        # 状态
-        self.last_click_time: float = 0
-        self.last_lookup_time: float = 0
-        self.is_looking_up: bool = False
-        self.popup: tk.Toplevel | None = None
-        self.explanation_var: tk.StringVar | None = None
-        self.popup_bounds: tuple | None = None  # (x, y, w, h)
-
-        # tkinter 主窗口（隐藏）
-        self.root = tk.Tk()
-        self.root.withdraw()
-        self.root.title("ClickWord")
-
-        self._setup_listener()
-        self._setup_tray()
+        self.root = tk.Tk(); self.root.withdraw(); self.root.title("ClickWord")
+        self._start_listener(); self._setup_tray()
 
     # ── 鼠标监听 ──────────────────────────────────────────────────────────────
-
-    def _setup_listener(self):
-        self.mouse_listener = mouse_mod.Listener(on_click=self._on_click)
-        self.mouse_listener.daemon = True
-        self.mouse_listener.start()
+    def _start_listener(self):
+        self._ml = mouse_mod.Listener(on_click=self._on_click)
+        self._ml.daemon = True; self._ml.start()
 
     def _on_click(self, x, y, button, pressed):
-        if button != mouse_mod.Button.left or not pressed:
-            return
-
-        # 如果弹窗已打开：点击弹窗外则关闭
+        if button != mouse_mod.Button.left or not pressed: return
         if self.popup:
-            if self.popup_bounds:
-                px, py, pw, ph = self.popup_bounds
-                if not (px <= x <= px + pw and py <= y <= py + ph):
-                    self.root.after(0, self._close_popup)
-                    self.last_click_time = 0
+            if self.pbounds:
+                px, py, pw, ph = self.pbounds
+                if not (px <= x <= px+pw and py <= y <= py+ph):
+                    self.root.after(0, self._close); self.last_click = 0
             return
-
         now = time.time()
-        if now - self.last_click_time < self.config["double_click_interval"]:
-            self.last_click_time = 0
-            if not self.is_looking_up and (now - self.last_lookup_time) > self.config["cooldown"]:
-                self.last_lookup_time = now
-                threading.Thread(target=self._handle_double_click, args=(x, y), daemon=True).start()
+        if now - self.last_click < self.cfg["double_click_interval"]:
+            self.last_click = 0
+            if not self.busy and now - self.last_lookup > self.cfg["cooldown"]:
+                self.last_lookup = now
+                threading.Thread(target=self._dbl, args=(x, y), daemon=True).start()
         else:
-            self.last_click_time = now
+            self.last_click = now
 
-    def _handle_double_click(self, x: int, y: int):
-        # 等待系统完成划词
-        time.sleep(0.12)
-
-        old_clip = Clipboard.get()
-
-        # 模拟 Ctrl+C
+    def _dbl(self, x, y):
+        time.sleep(0.13)
+        old = CB.get()
         kb = keyboard_mod.Controller()
         with kb.pressed(keyboard_mod.Key.ctrl):
-            kb.press("c")
-            kb.release("c")
-        time.sleep(0.1)
-
-        word = Clipboard.get()
-
-        # 恢复剪贴板
-        if old_clip and old_clip != word:
-            time.sleep(0.05)
-            Clipboard.set(old_clip)
-
+            kb.press("c"); kb.release("c")
+        time.sleep(0.12)
+        word = CB.get()
+        if old and old != word:
+            time.sleep(0.05); CB.set(old)
         word = (word or "").strip()
-        if not word or word == old_clip or len(word) > self.config["max_word_length"]:
-            return
+        if not word or word == old or len(word) > self.cfg["max_word_length"]: return
+        self.busy = True
+        self.root.after(0, lambda: self._show(word, x, y))
 
-        self.is_looking_up = True
-        self.root.after(0, lambda: self._show_popup(word, x, y))
+    # ── 弹窗（Win32 圆角 + 白色卡片）─────────────────────────────────────────
+    def _show(self, word, x, y):
+        self._close()
 
-    # ── 弹窗 UI ───────────────────────────────────────────────────────────────
+        p = tk.Toplevel(self.root)
+        p.withdraw()
+        p.overrideredirect(True)
+        p.attributes("-topmost", True)
+        p.configure(bg=OUTER)          # 外框色 → 圆角裁剪后形成边框效果
+        self.popup = p
 
-    def _show_popup(self, word: str, x: int, y: int):
-        self._close_popup()
-        t = THEME
+        # 白色内卡（与外框之间 2px 产生细边框）
+        card = tk.Frame(p, bg=CARD, padx=20, pady=16)
+        card.pack(padx=2, pady=2, fill=tk.BOTH, expand=True)
 
-        popup = tk.Toplevel(self.root)
-        popup.overrideredirect(True)
-        popup.attributes("-topmost", True)
-        popup.attributes("-alpha", 0.97)
-        popup.configure(bg=t["border"])  # 边框色
-        self.popup = popup
+        ft = tkfont.Font(family=FONT, size=13, weight="bold")
+        fb = tkfont.Font(family=FONT, size=10)
+        fs = tkfont.Font(family=FONT, size=9)
 
-        # 内容区（1px 边框效果）
-        inner = tk.Frame(popup, bg=t["bg"])
-        inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
-
-        frame = tk.Frame(inner, bg=t["bg"], padx=16, pady=14)
-        frame.pack(fill=tk.BOTH, expand=True)
-
-        f_title = tkfont.Font(family=FONT, size=12, weight="bold")
-        f_body  = tkfont.Font(family=FONT, size=10)
-        f_small = tkfont.Font(family=FONT, size=9)
-
-        # 标题行
-        header = tk.Frame(frame, bg=t["bg"])
-        header.pack(fill=tk.X, pady=(0, 6))
-
-        display = word[:55] + "…" if len(word) > 55 else word
-        tk.Label(header, text=display, font=f_title,
-                 fg=t["accent"], bg=t["bg"], anchor="w"
+        # 标题 + 关闭按钮
+        hdr = tk.Frame(card, bg=CARD); hdr.pack(fill=tk.X, pady=(0, 8))
+        disp = word[:52] + "…" if len(word) > 52 else word
+        tk.Label(hdr, text=disp, font=ft, fg=ACCENT, bg=CARD, anchor="w"
                  ).pack(side=tk.LEFT, fill=tk.X, expand=True)
-
-        close_btn = tk.Label(header, text="×",
-                             font=tkfont.Font(family="Arial", size=13, weight="bold"),
-                             fg=t["close"], bg=t["bg"], cursor="hand2", padx=3)
-        close_btn.pack(side=tk.RIGHT)
-        close_btn.bind("<Button-1>", lambda e: self._close_popup())
+        cl = tk.Label(hdr, text="×", font=tkfont.Font(family=FONT, size=14),
+                      fg=SUB_C, bg=CARD, cursor="hand2")
+        cl.pack(side=tk.RIGHT)
+        cl.bind("<Button-1>", lambda e: self._close())
 
         # 分割线
-        tk.Frame(frame, height=1, bg=t["border"]).pack(fill=tk.X, pady=(0, 10))
+        tk.Frame(card, height=1, bg=SEP_C).pack(fill=tk.X, pady=(0, 10))
 
         # 解释文字
-        self.explanation_var = tk.StringVar(value="AI 正在思考…")
-        expl_label = tk.Label(frame, textvariable=self.explanation_var,
-                              font=f_body, fg=t["text"], bg=t["bg"],
-                              wraplength=420, justify=tk.LEFT, anchor="w")
-        expl_label.pack(fill=tk.X, pady=(0, 12))
+        self.expl_var = tk.StringVar(value="正在查询…")
+        tk.Label(card, textvariable=self.expl_var, font=fb, fg=BODY_C, bg=CARD,
+                 wraplength=400, justify=tk.LEFT, anchor="w"
+                 ).pack(fill=tk.X, pady=(0, 14))
 
-        # 操作按钮行
-        actions = tk.Frame(frame, bg=t["bg"])
-        actions.pack(fill=tk.X)
-
-        def make_btn(parent, label, fg, cmd):
-            b = tk.Label(parent, text=label, font=f_small,
-                         fg=fg, bg=t["secondary_bg"],
-                         padx=9, pady=3, cursor="hand2")
-            b.pack(side=tk.LEFT, padx=(0, 5))
+        # 操作按钮
+        row = tk.Frame(card, bg=CARD); row.pack(fill=tk.X)
+        def mkbtn(text, fg, bg, cmd):
+            b = tk.Label(row, text=text, font=fs, fg=fg, bg=bg, padx=10, pady=4, cursor="hand2")
+            b.pack(side=tk.LEFT, padx=(0, 6))
             b.bind("<Button-1>", lambda e: cmd())
-            b.bind("<Enter>", lambda e, _b=b: _b.configure(fg="white"))
-            b.bind("<Leave>", lambda e, _b=b, _fg=fg: _b.configure(fg=_fg))
+            b.bind("<Enter>",  lambda e, _b=b: _b.config(fg=ACCENT))
+            b.bind("<Leave>",  lambda e, _b=b, _f=fg: _b.config(fg=_f))
 
-        make_btn(actions, "复制", t["subtext"], self._copy_explanation)
-
+        mkbtn("复制", SUB_C, COPY_BG, self._copy)
         q = urllib.parse.quote(word)
-        for label_text, url in [
-            ("百度",   f"https://www.baidu.com/s?wd={q}"),
-            ("维基",   f"https://zh.wikipedia.org/w/index.php?search={q}"),
-            ("Google", f"https://www.google.com/search?q={q}"),
-        ]:
-            make_btn(actions, label_text, t["link"], lambda u=url: webbrowser.open(u))
+        mkbtn("百度",   LINK_FG, LINK_BG, lambda: webbrowser.open(f"https://www.baidu.com/s?wd={q}"))
+        mkbtn("维基",   LINK_FG, LINK_BG, lambda: webbrowser.open(f"https://zh.wikipedia.org/w/index.php?search={q}"))
+        mkbtn("Google", LINK_FG, LINK_BG, lambda: webbrowser.open(f"https://www.google.com/search?q={q}"))
 
-        # 定位弹窗（避免超出屏幕）
-        popup.update_idletasks()
-        w = max(popup.winfo_reqwidth(), 460)
-        h = popup.winfo_reqheight()
-        sw = self.root.winfo_screenwidth()
-        sh = self.root.winfo_screenheight()
+        # ── 定位 & 圆角 ──
+        p.update_idletasks()
+        W = max(p.winfo_reqwidth(), 460)
+        H = p.winfo_reqheight()
 
-        px = max(10, min(x + 14, sw - w - 14))
-        py = y + 28
-        if py + h > sh - 60:
-            py = max(10, y - h - 10)
+        sw = self.root.winfo_screenwidth(); sh = self.root.winfo_screenheight()
+        px = max(10, min(x + 14, sw - W - 14))
+        py = y + 30
+        if py + H > sh - 60: py = max(10, y - H - 10)
 
-        popup.geometry(f"{w}x{h}+{px}+{py}")
-        self.popup_bounds = (px, py, w, h)
-        popup.bind("<Escape>", lambda e: self._close_popup())
+        p.geometry(f"{W}x{H}+{px}+{py}")
+        self.pbounds = (px, py, W, H)
+        p.deiconify()
+        p.update_idletasks()
 
-        # 后台调用 AI
-        threading.Thread(target=self._fetch_explanation, args=(word,), daemon=True).start()
+        # 应用 Win32 圆角
+        _round_window(p.winfo_id(), W, H, r=14)
 
-    def _copy_explanation(self):
-        if self.explanation_var:
-            text = self.explanation_var.get()
-            if text and "正在思考" not in text:
-                Clipboard.set(text)
+        p.bind("<Escape>", lambda e: self._close())
+        threading.Thread(target=self._ai, args=(word,), daemon=True).start()
 
-    def _fetch_explanation(self, word: str):
+    def _copy(self):
+        if self.expl_var:
+            t = self.expl_var.get()
+            if t and "查询" not in t: CB.set(t)
+
+    def _ai(self, word):
         try:
-            prompt = (
-                f'请对以下内容给出简洁解释（2-3句话，不超过100字）：\n\n"{word}"\n\n'
-                "要求：直接解释，不重复词语本身；"
-                "英文单词→给中文释义和例句；"
-                "中文词→详细说明或背景；"
-                "专业术语→用通俗语言解释；"
-                "人名地名→简短介绍；"
-                "整段文字→提炼核心要点。"
+            r = self.client.chat.completions.create(
+                model=self.cfg["model"],
+                messages=[{"role": "user", "content": (
+                    f'请对以下内容给出简洁解释（2-3句话，不超过100字）：\n\n"{word}"\n\n'
+                    '要求：直接解释，不重复词语本身；英文→中文释义和例句；'
+                    '中文→详细说明；专业术语→通俗解释；人名地名→简短介绍；'
+                    '整段文字→核心要点总结。'
+                )}],
+                max_tokens=200, temperature=0.3
             )
-            resp = self.client.chat.completions.create(
-                model=self.config["model"],
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=200,
-                temperature=0.3,
-            )
-            text = resp.choices[0].message.content.strip()
+            text = r.choices[0].message.content.strip()
         except Exception as e:
-            text = f"⚠ 查询失败：{str(e)[:100]}"
+            text = f"⚠ 查询失败：{str(e)[:80]}"
+        self.root.after(0, lambda: self._upd(text))
+        self.busy = False
 
-        self.root.after(0, lambda: self._update_explanation(text))
-        self.is_looking_up = False
+    def _upd(self, text):
+        if self.expl_var and self.popup:
+            try: self.expl_var.set(text); self.popup.update_idletasks()
+            except: pass
 
-    def _update_explanation(self, text: str):
-        if self.explanation_var and self.popup:
-            try:
-                self.explanation_var.set(text)
-                self.popup.update_idletasks()
-            except Exception:
-                pass
-
-    def _close_popup(self):
-        self.is_looking_up = False
+    def _close(self):
+        self.busy = False
         if self.popup:
-            try:
-                self.popup.destroy()
-            except Exception:
-                pass
-        self.popup = None
-        self.popup_bounds = None
-        self.explanation_var = None
+            try: self.popup.destroy()
+            except: pass
+        self.popup = None; self.pbounds = None; self.expl_var = None
 
     # ── 系统托盘 ──────────────────────────────────────────────────────────────
-
-    def _create_icon_image(self):
+    def _make_icon(self):
         img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
-        d.ellipse([2, 2, 62, 62], fill=(137, 180, 250, 240))
+        d.ellipse([2, 2, 62, 62], fill=(99, 102, 241, 230))
         try:
-            fnt = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 36)
-            bbox = d.textbbox((0, 0), "W", font=fnt)
-            fw, fh = bbox[2] - bbox[0], bbox[3] - bbox[1]
-            d.text(((64 - fw) // 2, (64 - fh) // 2 - 2), "W",
-                   fill=(30, 30, 46), font=fnt)
-        except Exception:
-            d.rectangle([20, 22, 44, 42], fill=(30, 30, 46))
+            fnt = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 34)
+            bb = d.textbbox((0, 0), "W", font=fnt)
+            d.text(((64-bb[2]+bb[0])//2, (64-bb[3]+bb[1])//2 - 1),
+                   "W", fill=(255, 255, 255), font=fnt)
+        except:
+            d.rectangle([20, 22, 44, 42], fill=(255, 255, 255))
         return img
 
     def _setup_tray(self):
-        img = self._create_icon_image()
         menu = pystray.Menu(
             pystray.MenuItem("ClickWord  运行中", None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("退出", self._quit),
         )
-        self.tray = pystray.Icon("ClickWord", img, "ClickWord - 双击查词", menu)
+        self.tray = pystray.Icon("ClickWord", self._make_icon(), "ClickWord - 双击查词", menu)
 
     def _quit(self, *_):
-        self.mouse_listener.stop()
-        self.tray.stop()
-        self.root.quit()
-
-    # ── 启动 ──────────────────────────────────────────────────────────────────
+        self._ml.stop(); self.tray.stop(); self.root.quit()
 
     def run(self):
         threading.Thread(target=self.tray.run, daemon=True).start()
         self.root.mainloop()
 
-
 # ─── 入口 ─────────────────────────────────────────────────────────────────────
-
 def main():
-    config = load_config()
-
-    if not config.get("api_key"):
-        result = show_setup_dialog()
-        if not result.get("api_key"):
-            sys.exit(0)
-        config["api_key"] = result["api_key"]
-        save_config(config)
-
+    cfg = load_config()
+    if not cfg.get("api_key"):
+        res = show_setup_dialog()
+        if not res.get("api_key"): sys.exit(0)
+        cfg["api_key"] = res["api_key"]; save_config(cfg)
     try:
-        app = ClickWordApp(config)
-        app.run()
+        App(cfg).run()
     except Exception as e:
         r = tk.Tk(); r.withdraw()
-        messagebox.showerror("ClickWord 错误",
-                             f"启动失败：\n{e}\n\n{traceback.format_exc()[:600]}")
+        messagebox.showerror("ClickWord 错误", f"{e}\n\n{traceback.format_exc()[:500]}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

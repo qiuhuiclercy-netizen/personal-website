@@ -9,3 +9,16 @@ crawl-output/
 __pycache__/
 node_modules/
 clickword/config.json
+.playwright-mcp/
+baidu_python_search.png
+debug.png
+baidu_search.py
+
+# VideoTranslator 敏感文件
+VideoTranslator/backend/.env
+VideoTranslator/backend/output/
+VideoTranslator/backend/temp/
+VideoTranslator/mobile/.dart_tool/
+VideoTranslator/mobile/build/
+VideoTranslator/backend/*.mp3
+VideoTranslator/backend/*.wav

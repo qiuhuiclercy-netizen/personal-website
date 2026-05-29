@@ -1,0 +1,81 @@
+{
+  "expo": {
+    "name": "VideoDub AI",
+    "slug": "videodub-ai",
+    "scheme": "videodub",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0D0F1A",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.videodub.ai",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
+    "android": {
+      "package": "com.videodub.ai",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#7C6AFF",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_VIDEO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-video",
+      "expo-audio",
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "允许 VideoDub AI 把配音视频保存到你的相册",
+          "savePhotosPermission": "允许 VideoDub AI 把配音视频保存到你的相册",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": ["text/*", "video/*"]
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1c970179-454d-44dc-89fe-c2ae7584db6c"
+      }
+    },
+    "owner": "clercy"
+  }
+}
