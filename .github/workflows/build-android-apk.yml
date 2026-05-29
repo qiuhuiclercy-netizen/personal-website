@@ -46,16 +46,29 @@ jobs:
         working-directory: VideoTranslator/mobile/android
         run: ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
 
+      - name: 🔍 List APK outputs (debug)
+        if: always()
+        run: |
+          echo "=== Looking for APK files ==="
+          find VideoTranslator/mobile/android -name "*.apk" -type f 2>/dev/null || echo "find failed"
+          echo "=== Release dir contents ==="
+          ls -la VideoTranslator/mobile/android/app/build/outputs/apk/release/ 2>/dev/null || echo "no release dir"
+          echo "=== All build outputs ==="
+          ls -la VideoTranslator/mobile/android/app/build/outputs/ 2>/dev/null || echo "no outputs dir"
+
       - name: 📤 Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: VideoDub-release-apk
-          path: VideoTranslator/mobile/android/app/build/outputs/apk/release/*.apk
+          path: |
+            VideoTranslator/mobile/android/app/build/outputs/apk/**/*.apk
+            VideoTranslator/mobile/android/app/build/outputs/bundle/**/*.aab
+          if-no-files-found: warn
           retention-days: 30
 
-      - name: 🪵 Upload build log on failure
-        if: failure()
+      - name: 🪵 Upload build log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gradle-build-log
